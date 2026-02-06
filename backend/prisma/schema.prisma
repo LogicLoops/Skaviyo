@@ -1,0 +1,312 @@
+// Prisma schema for e-commerce application
+// Provider: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum VendorStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderItemStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+// ==================== MODELS ====================
+
+model users {
+  id         BigInt      @id @default(autoincrement())
+  name       String
+  email      String      @unique
+  password   String
+  phone      String?
+  role       UserRole
+  status     UserStatus
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  // Relations
+  vendors       vendors?       @relation("UserVendor")
+  carts         cart[]
+  orders        orders[]
+  addresses     addresses[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model vendors {
+  id           BigInt         @id @default(autoincrement())
+  user_id      BigInt         @unique
+  store_name   String
+  gst_number   String?
+  bank_account String?
+  status       VendorStatus
+  created_at   DateTime       @default(now())
+
+  // Relations
+  user           users             @relation("UserVendor", fields: [user_id], references: [id], onDelete: Cascade)
+  vendor_staff   vendor_staff[]
+  products       products[]
+  order_items    order_items[]
+
+  @@index([user_id])
+  @@index([status])
+  @@index([store_name])
+}
+
+model vendor_staff {
+  id         BigInt    @id @default(autoincrement())
+  vendor_id  BigInt
+  name       String
+  role       String
+  created_at DateTime  @default(now())
+
+  // Relations
+  vendor vendors @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+
+  @@index([vendor_id])
+}
+
+model categories {
+  id         BigInt       @id @default(autoincrement())
+  name       String
+  parent_id  BigInt?
+  created_at DateTime     @default(now())
+
+  // Self-relation (parent-child categories)
+  parent     categories?  @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children   categories[] @relation("CategoryHierarchy")
+  products   products[]
+
+  @@index([parent_id])
+  @@index([name])
+}
+
+model products {
+  id           BigInt           @id @default(autoincrement())
+  vendor_id    BigInt
+  category_id  BigInt
+  title        String
+  description  String?
+  brand        String?
+  is_active    Boolean          @default(true)
+  created_at   DateTime         @default(now())
+
+  // Relations
+  vendor         vendors           @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+  category       categories        @relation(fields: [category_id], references: [id])
+  images         product_images[]
+  variants       product_variants[]
+
+  @@index([vendor_id])
+  @@index([category_id])
+  @@index([is_active])
+  @@index([title])
+}
+
+model product_images {
+  id         BigInt    @id @default(autoincrement())
+  product_id BigInt
+  image_url  String
+  is_primary Boolean   @default(false)
+  created_at DateTime  @default(now())
+
+  // Relations
+  product products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+}
+
+model product_variants {
+  id               BigInt    @id @default(autoincrement())
+  product_id       BigInt
+  size             String?
+  color            String?
+  price            Decimal
+  discount_price   Decimal?
+  sku              String    @unique
+  stock_quantity   Int
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  // Relations
+  product    products     @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  cart_items cart_items[] @relation("CartItems")
+  order_items order_items[] @relation("OrderItems")
+
+  @@index([product_id])
+  @@index([sku])
+  @@index([stock_quantity])
+}
+
+model cart {
+  id         BigInt     @id @default(autoincrement())
+  user_id    BigInt
+  updated_at DateTime   @updatedAt
+  created_at DateTime   @default(now())
+
+  // Relations
+  user   users        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  items  cart_items[]
+
+  @@index([user_id])
+}
+
+model cart_items {
+  id               BigInt    @id @default(autoincrement())
+  cart_id          BigInt
+  product_variant_id BigInt
+  quantity         Int
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  // Relations
+  cart             cart              @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product_variant  product_variants  @relation("CartItems", fields: [product_variant_id], references: [id])
+
+  @@index([cart_id])
+  @@index([product_variant_id])
+}
+
+model orders {
+  id             BigInt        @id @default(autoincrement())
+  user_id        BigInt
+  order_number   String        @unique
+  total_amount   Decimal
+  order_status   OrderStatus
+  payment_status PaymentStatus
+  created_at     DateTime      @default(now())
+
+  // Relations
+  user        users           @relation(fields: [user_id], references: [id])
+  items       order_items[]
+  payments    payments[]
+  tracking    order_tracking[]
+
+  @@index([user_id])
+  @@index([order_number])
+  @@index([order_status])
+  @@index([payment_status])
+  @@index([created_at])
+}
+
+model order_items {
+  id               BigInt           @id @default(autoincrement())
+  order_id         BigInt
+  vendor_id        BigInt
+  product_variant_id BigInt
+  price            Decimal
+  quantity         Int
+  item_status      OrderItemStatus
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+
+  // Relations
+  order          orders            @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  vendor         vendors           @relation(fields: [vendor_id], references: [id])
+  product_variant product_variants @relation("OrderItems", fields: [product_variant_id], references: [id])
+
+  @@index([order_id])
+  @@index([vendor_id])
+  @@index([product_variant_id])
+  @@index([item_status])
+}
+
+model order_tracking {
+  id         BigInt    @id @default(autoincrement())
+  order_id   BigInt
+  status     String
+  location   String?
+  updated_at DateTime  @updatedAt
+  created_at DateTime  @default(now())
+
+  // Relations
+  order orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id])
+  @@index([status])
+}
+
+model payments {
+  id              BigInt        @id @default(autoincrement())
+  order_id        BigInt
+  payment_gateway String
+  transaction_id  String        @unique
+  amount          Decimal
+  status          PaymentStatus
+  paid_at         DateTime?
+  created_at      DateTime      @default(now())
+
+  // Relations
+  order orders @relation(fields: [order_id], references: [id])
+
+  @@index([order_id])
+  @@index([transaction_id])
+  @@index([status])
+  @@index([created_at])
+}
+
+model addresses {
+  id            BigInt    @id @default(autoincrement())
+  user_id       BigInt
+  name          String
+  phone         String
+  address_line1 String
+  address_line2 String?
+  city          String
+  state         String
+  pincode       String
+  country       String
+  is_default    Boolean   @default(false)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([is_default])
+  @@index([pincode])
+}
