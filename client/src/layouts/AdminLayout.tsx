@@ -8,7 +8,7 @@ const AdminLayout = () => {
       <Sidebar />
       
       {/* Dynamic Content Area */}
-      <div className="flex-1 ml-64 overflow-auto">
+      <div className="flex-1 ml-54 overflow-auto">
         <Outlet />
       </div>
     </div>

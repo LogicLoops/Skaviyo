@@ -40,7 +40,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="fixed left-0 top-0 h-screen w-64 bg-white shadow-xl shadow-green-200 flex flex-col justify-between overflow-hidden">
+    <div className="fixed left-0 top-0 h-screen w-54 bg-white shadow-xl shadow-green-200 flex flex-col justify-between overflow-hidden">
       {/* Logo Section */}
       <div>
         <Link to="/admin" className="flex items-center gap-3 px-6 py-5 hover:no-underline">
