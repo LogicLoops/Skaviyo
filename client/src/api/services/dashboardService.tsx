@@ -167,3 +167,39 @@ export const getTopSellingProducts = async () => {
     throw error;
   }
 };
+
+// Get order status breakdown
+export const getOrderStatusBreakdown = async () => {
+  try {
+    const response = await axiosClient.get("/admin/orders/status-breakdown");
+    return {
+      delivered: response.data.data.DELIVERED || 0,
+      shipped: response.data.data.SHIPPED || 0,
+      cancelled: response.data.data.CANCELLED || 0,
+      pending: response.data.data.PENDING || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching order status breakdown:", error);
+    return {
+      delivered: 0,
+      shipped: 0,
+      cancelled: 0,
+      pending: 0,
+    };
+  }
+};
+
+// Get orders by category (DELIVERED, SHIPPED, CANCELLED, PENDING)
+export const getOrdersByCategory = async (category: string) => {
+  try {
+    const response = await axiosClient.get(`/admin/orders/status-breakdown?category=${category}`);
+    return response.data.data;
+  } catch (error) {
+    console.error(`Error fetching ${category} orders:`, error);
+    return {
+      status: category,
+      count: 0,
+      orders: []
+    };
+  }
+};

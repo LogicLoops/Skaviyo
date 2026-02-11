@@ -30,6 +30,9 @@ router.get('/total-orders', AdminController.getTotalOrcers);
 // Get orders by status
 router.get('/orders/status/:status', AdminController.getOrdersByStatus);
 
+// Get order status breakdown (count by status)
+router.get('/orders/status-breakdown', AdminController.getOrderStatusBreakdown);
+
 // Get top selling products
 router.get('/top-selling-products', AdminController.getTopSellingProducts);
 
