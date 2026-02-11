@@ -5,8 +5,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Import authorization routes
+// Import routes
 const authRoutes = require('./authorization/routes/auth');
+const adminRoutes = require('./admin/routes/admin.routes');
 
 // Middleware
 app.use(cors());
@@ -37,7 +38,11 @@ app.get('/health', (req, res) => {
 // Authorization routes
 app.use('/api/v1/auth', authRoutes);
 
+// Admin routes
+app.use('/api/v1/admin', adminRoutes);
+
 app.listen(PORT, () => {
   console.log(`[SERVER] Skaviyo Backend running on http://localhost:${PORT}`);
   console.log(`[SERVER] Health check: http://localhost:${PORT}/health`);
 });
+
