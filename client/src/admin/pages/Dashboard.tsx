@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Header from "../components/Header";
 import LottieLoader from "../components/Loder";
-import profile from "../../assets/lottie/profile.json";
 import {
   ResponsiveContainer,
   BarChart,
@@ -13,8 +13,6 @@ import {
   Users,
   Store,
   ShoppingBag,
-  Search,
-  Bell,
   IndianRupee,
   CheckCircle2,
   Truck,
@@ -30,7 +28,6 @@ import {
   getTopSellingProducts,
   getOrderStatusBreakdown
 } from "../../api/services/dashboardService";
-import Lottie from "lottie-react";
 
 const revenueData = [
   { day: "Mon", value: 4200 },
@@ -42,13 +39,7 @@ const revenueData = [
   { day: "Sun", value: 5900 },
 ];
 
-const cardStyle =
-  "bg-gradient-to-br from-white via-white to-gray-50 border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 transform-gpu perspective";
-
 const kpiCardStyle =
-  "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform-gpu perspective";
-
-const statCardStyle = 
   "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform-gpu perspective";
 
 interface KPI {
@@ -68,7 +59,6 @@ interface TopProduct {
 const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [kpis, setKpis] = useState<KPI[]>([]);
-  const [userName, setUserName] = useState<string>("Admin");
   const [topSellingProducts, setTopSellingProducts] = useState<TopProduct[] >([]);
   const [orderStats, setOrderStats] = useState({
     delivered: 0,
@@ -86,7 +76,7 @@ const Dashboard: React.FC = () => {
       
       const attemptFetch = async () => {
         try {
-          const [users, vendors, orders, payments, adminDetails, topProducts, orderStatus] = await Promise.all([
+          const [users, vendors, orders, payments, , topProducts, orderStatus] = await Promise.all([
             getTotalUsers(),
             getTotalVendors(),
             getOrdersStats(),
@@ -126,10 +116,6 @@ const Dashboard: React.FC = () => {
               icon: <IndianRupee size={22} />,
             },
           ]);
-
-              setUserName(
-                adminDetails?.name ? adminDetails.name : "Admin"
-              );
 
               setTopSellingProducts(
                 Array.isArray(topProducts?.data) ? topProducts.data : []
@@ -230,43 +216,11 @@ const Dashboard: React.FC = () => {
       `}</style>
       
       <div className="p-8 relative z-10">
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-12">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Manage your business efficiently</p>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all border border-emerald-200"
-          >
-            <Search size={20} className="text-emerald-600" />
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all border border-emerald-200 relative"
-          >
-            <Bell size={20} className="text-emerald-600" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-600 rounded-full"></span>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="flex items-center gap-3 bg-white px-5 py-3 rounded-full shadow-md hover:shadow-lg transition-all ml-2 border border-emerald-200"
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
-              <Lottie animationData={profile} loop={true} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-gray-800">{userName}</p>
-              <p className="text-xs text-gray-600">Admin</p>
-            </div>
-          </motion.div>
-        </div>
-      </div>
+        {/* HEADER */}
+        <Header
+          pageTitle="Dashboard"
+          pageSubtitle="Manage your business efficiently"
+        />
 
       {/* RIGHT-SIDE CONTENT (RENDERS ONLY AFTER LOADING) */}
       <div className="relative">
