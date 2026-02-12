@@ -46,10 +46,10 @@ const cardStyle =
   "bg-gradient-to-br from-white via-white to-gray-50 border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 transform-gpu perspective";
 
 const kpiCardStyle =
-  "bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:border-white/80 transform-gpu perspective bg-gradient-to-br from-white/50 to-emerald-50/20";
+  "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform-gpu perspective";
 
 const statCardStyle = 
-  "bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 transform-gpu perspective bg-gradient-to-br from-white/50 to-emerald-50/20";
+  "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform-gpu perspective";
 
 interface KPI {
   title: string;
@@ -176,9 +176,9 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 relative overflow-hidden">
       {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 animate-blob"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 animate-blob animation-delay-2000"></div>
-      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 animate-blob animation-delay-4000"></div>
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-15 -z-10 animate-blob"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-15 -z-10 animate-blob animation-delay-2000"></div>
+      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10 -z-10 animate-blob animation-delay-4000"></div>
       
       <style>{`
         @keyframes blob {
@@ -209,15 +209,15 @@ const Dashboard: React.FC = () => {
           border-color: rgba(255, 255, 255, 0.9);
         }
         .glass-effect {
-          background: rgba(255, 255, 255, 0.45);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.65);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 253, 250, 0.5) 100%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(167, 243, 208, 0.4);
         }
         .glass-effect:hover {
-          background: rgba(255, 255, 255, 0.55);
-          border: 1px solid rgba(255, 255, 255, 0.85);
-          box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(240, 253, 250, 0.8) 100%);
+          border: 1px solid rgba(110, 231, 183, 0.6);
+          box-shadow: 0 25px 50px rgba(16, 185, 129, 0.08);
         }
       `}</style>
       
@@ -225,36 +225,36 @@ const Dashboard: React.FC = () => {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-12">
         <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-900 via-green-800 to-teal-800 bg-clip-text text-transparent">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome back, manage your business</p>
+          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Manage your business efficiently</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <motion.div
             whileHover={{ scale: 1.1 }}
-            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all"
+            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all border border-emerald-200"
           >
-            <Search size={20} className="text-emerald-700" />
+            <Search size={20} className="text-emerald-600" />
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.1 }}
-            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all relative"
+            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all border border-emerald-200 relative"
           >
-            <Bell size={20} className="text-emerald-700" />
+            <Bell size={20} className="text-emerald-600" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-600 rounded-full"></span>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.03 }}
-            className="flex items-center gap-3 bg-white px-5 py-3 rounded-full shadow-md hover:shadow-lg transition-all ml-2"
+            className="flex items-center gap-3 bg-white px-5 py-3 rounded-full shadow-md hover:shadow-lg transition-all ml-2 border border-emerald-200"
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
               <Lottie animationData={profile} loop={true} />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-800">{userName}</p>
-              <p className="text-xs text-gray-500">Admin</p>
+              <p className="text-xs text-gray-600">Admin</p>
             </div>
           </motion.div>
         </div>
@@ -276,15 +276,15 @@ const Dashboard: React.FC = () => {
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                  <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wider">
                     {kpi.title}
                   </h3>
-                  <p className="text-4xl font-bold bg-gradient-to-r from-emerald-900 to-green-700 bg-clip-text text-transparent mt-3">
+                  <p className="text-4xl font-bold text-gray-900 mt-3">
                     {kpi.value}
                   </p>
                   <p className="text-xs text-emerald-600 font-medium mt-3">{kpi.sub}</p>
                 </div>
-                <div className="bg-gradient-to-br from-emerald-300/40 to-green-300/20 backdrop-blur-md p-4 rounded-xl text-emerald-600 group-hover:from-emerald-300/60 group-hover:to-green-300/40 transition-all duration-300 group-hover:scale-110 border border-emerald-200/40">
+                <div className="bg-emerald-50 p-4 rounded-xl text-emerald-600 group-hover:bg-emerald-100 transition-all duration-300 group-hover:scale-110 border border-emerald-200">
                   {kpi.icon}
                 </div>
               </div>
@@ -304,12 +304,12 @@ const Dashboard: React.FC = () => {
           >
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                <h2 className="text-2xl font-bold text-gray-900">
                   Revenue Overview
                 </h2>
                 <p className="text-sm text-gray-600 mt-1">Weekly revenue performance</p>
               </div>
-              <select className="glass-effect border border-white/60 rounded-lg px-4 py-2 text-sm bg-white/30 hover:bg-white/40 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-white/80 text-gray-700">
+              <select className="border border-emerald-200 rounded-lg px-4 py-2 text-sm bg-white hover:bg-emerald-50 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-400 text-gray-700">
                 <option>Last 7 Days</option>
                 <option>Last 30 Days</option>
                 <option>Last 90 Days</option>
@@ -349,7 +349,7 @@ const Dashboard: React.FC = () => {
             style={{ transformStyle: "preserve-3d" }}
           >
             <div className="mb-6">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h2 className="text-2xl font-bold text-gray-900">
                 Top Products
               </h2>
               <p className="text-sm text-gray-600 mt-1">Most sold items</p>

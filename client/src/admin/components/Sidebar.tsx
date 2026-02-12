@@ -61,7 +61,7 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-emerald-50 via-green-50 to-teal-50 flex flex-col justify-between overflow-hidden relative">
+    <div className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-emerald-50 via-green-50 to-teal-50 flex flex-col justify-between overflow-hidden relative border-r border-emerald-400 shadow-lg">
       {/* Decorative background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
@@ -70,19 +70,21 @@ const Sidebar: React.FC = () => {
 
       <style>{`
         .glass-item {
-          background: rgba(255, 255, 255, 0.5);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(16, 185, 129, 0.08) 100%);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.6);
+          border: 2px solid rgba(16, 185, 129, 0.3);
         }
         .glass-item:hover {
-          background: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(255, 255, 255, 0.8);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(16, 185, 129, 0.12) 100%);
+          border: 2px solid rgba(16, 185, 129, 0.5);
+          box-shadow: 0 8px 20px rgba(16, 185, 129, 0.15);
         }
         .glass-item.active {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(34, 197, 94, 0.9));
-          border: 1px solid rgba(255, 255, 255, 0.8);
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(34, 197, 94, 0.95));
+          border: 2px solid rgba(255, 255, 255, 0.9);
           color: white;
+          box-shadow: 0 12px 30px rgba(16, 185, 129, 0.3);
         }
       `}</style>
 
