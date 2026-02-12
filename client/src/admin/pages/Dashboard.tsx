@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import LottieLoader from "../components/Loder";
+import profile from "../../assets/lottie/profile.json";
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,6 +16,10 @@ import {
   Search,
   Bell,
   IndianRupee,
+  CheckCircle2,
+  Truck,
+  XCircle,
+  Clock,
 } from "lucide-react";
 import {
   getTotalUsers,
@@ -22,8 +27,10 @@ import {
   getOrdersStats,
   getPaymentStats,
   getAdminDetails,
-  getTopSellingProducts
+  getTopSellingProducts,
+  getOrderStatusBreakdown
 } from "../../api/services/dashboardService";
+import Lottie from "lottie-react";
 
 const revenueData = [
   { day: "Mon", value: 4200 },
@@ -36,7 +43,13 @@ const revenueData = [
 ];
 
 const cardStyle =
-  "bg-gradient-to-br from-white to-[#F7FBF9] border border-gray-100 rounded-2xl shadow-[0_6px_18px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_28px_rgba(0,0,0,0.12)] transition-all duration-300";
+  "bg-gradient-to-br from-white via-white to-gray-50 border border-gray-100 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 transform-gpu perspective";
+
+const kpiCardStyle =
+  "bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 hover:border-white/80 transform-gpu perspective bg-gradient-to-br from-white/50 to-emerald-50/20";
+
+const statCardStyle = 
+  "bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 transform-gpu perspective bg-gradient-to-br from-white/50 to-emerald-50/20";
 
 interface KPI {
   title: string;
@@ -57,6 +70,12 @@ const Dashboard: React.FC = () => {
   const [kpis, setKpis] = useState<KPI[]>([]);
   const [userName, setUserName] = useState<string>("Admin");
   const [topSellingProducts, setTopSellingProducts] = useState<TopProduct[] >([]);
+  const [orderStats, setOrderStats] = useState({
+    delivered: 0,
+    shipped: 0,
+    cancelled: 0,
+    pending: 0,
+  });
 
 
 
@@ -67,13 +86,14 @@ const Dashboard: React.FC = () => {
       
       const attemptFetch = async () => {
         try {
-          const [users, vendors, orders, payments, adminDetails, topProducts] = await Promise.all([
+          const [users, vendors, orders, payments, adminDetails, topProducts, orderStatus] = await Promise.all([
             getTotalUsers(),
             getTotalVendors(),
             getOrdersStats(),
             getPaymentStats(),
             getAdminDetails(),
-            getTopSellingProducts()
+            getTopSellingProducts(),
+            getOrderStatusBreakdown()
           ]);
 
           const formattedRevenue = payments.totalRevenue
@@ -115,6 +135,8 @@ const Dashboard: React.FC = () => {
                 Array.isArray(topProducts?.data) ? topProducts.data : []
               );
 
+              setOrderStats(orderStatus);
+
 
 
           // Only set loading to false AFTER data is successfully fetched
@@ -152,34 +174,87 @@ const Dashboard: React.FC = () => {
 
   // ✅ MAIN DASHBOARD (renders ONLY after loading = false)
   return (
-    <div className="p-8 bg-[#F2FAF5] min-h-screen relative">
-      {/* HEADER (ALWAYS VISIBLE) */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-semibold text-[#1F3F32]">Dashboard</h1>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 animate-blob"></div>
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-green-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 animate-blob animation-delay-2000"></div>
+      <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-teal-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 -z-10 animate-blob animation-delay-4000"></div>
+      
+      <style>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotateX(0deg); }
+          50% { transform: translateY(-10px) rotateX(5deg); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        .card-3d {
+          perspective: 1000px;
+        }
+        .card-3d:hover {
+          transform: rotateY(3deg) rotateX(-2deg) scale(1.01) !important;
+          filter: drop-shadow(0 20px 40px rgba(16, 185, 129, 0.2));
+          background: rgba(255, 255, 255, 0.5);
+          border-color: rgba(255, 255, 255, 0.9);
+        }
+        .glass-effect {
+          background: rgba(255, 255, 255, 0.45);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.65);
+        }
+        .glass-effect:hover {
+          background: rgba(255, 255, 255, 0.55);
+          border: 1px solid rgba(255, 255, 255, 0.85);
+          box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+      `}</style>
+      
+      <div className="p-8 relative z-10">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-12">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-900 via-green-800 to-teal-800 bg-clip-text text-transparent">Dashboard</h1>
+          <p className="text-gray-600 mt-1">Welcome back, manage your business</p>
+        </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white p-2 rounded-full shadow-sm"
+            whileHover={{ scale: 1.1 }}
+            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all"
           >
-            <Search size={18} className="text-gray-600" />
+            <Search size={20} className="text-emerald-700" />
           </motion.div>
 
           <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="bg-white p-2 rounded-full shadow-sm"
+            whileHover={{ scale: 1.1 }}
+            className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all relative"
           >
-            <Bell size={18} className="text-gray-600" />
+            <Bell size={20} className="text-emerald-700" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-600 rounded-full"></span>
           </motion.div>
 
           <motion.div
             whileHover={{ scale: 1.03 }}
-            className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm"
+            className="flex items-center gap-3 bg-white px-5 py-3 rounded-full shadow-md hover:shadow-lg transition-all ml-2"
           >
-            <div className="w-9 h-9 bg-gray-300 rounded-full"></div>
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full flex items-center justify-center">
+              <Lottie animationData={profile} loop={true} />
+            </div>
             <div>
-              <p className="text-sm font-semibold">{userName}</p>
-              <p className="text-xs text-gray-500">Super Admin</p>
+              <p className="text-sm font-semibold text-gray-800">{userName}</p>
+              <p className="text-xs text-gray-500">Admin</p>
             </div>
           </motion.div>
         </div>
@@ -188,27 +263,28 @@ const Dashboard: React.FC = () => {
       {/* RIGHT-SIDE CONTENT (RENDERS ONLY AFTER LOADING) */}
       <div className="relative">
         {/* KPI CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {kpis.map((kpi, idx) => (
             <motion.div
               key={idx}
-              initial={{ y: 10, opacity: 0 }}
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: idx * 0.08 }}
-              whileHover={{ y: -5 }}
-              className={`${cardStyle} p-6`}
+              transition={{ delay: idx * 0.1, type: "spring", stiffness: 100 }}
+              whileHover={{ y: -10, rotateX: -5, rotateY: 5, scale: 1.02 }}
+              className={`${kpiCardStyle} glass-effect p-6 group cursor-pointer card-3d`}
+              style={{ transformStyle: "preserve-3d" }}
             >
               <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-gray-500 text-sm font-medium">
+                <div className="flex-1">
+                  <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
                     {kpi.title}
                   </h3>
-                  <p className="text-3xl font-bold text-[#1F3F32] mt-2">
+                  <p className="text-4xl font-bold bg-gradient-to-r from-emerald-900 to-green-700 bg-clip-text text-transparent mt-3">
                     {kpi.value}
                   </p>
-                  <p className="text-xs text-green-700 mt-1">{kpi.sub}</p>
+                  <p className="text-xs text-emerald-600 font-medium mt-3">{kpi.sub}</p>
                 </div>
-                <div className="bg-[#F2FAF5] p-3 rounded-xl text-[#1F3F32]">
+                <div className="bg-gradient-to-br from-emerald-300/40 to-green-300/20 backdrop-blur-md p-4 rounded-xl text-emerald-600 group-hover:from-emerald-300/60 group-hover:to-green-300/40 transition-all duration-300 group-hover:scale-110 border border-emerald-200/40">
                   {kpi.icon}
                 </div>
               </div>
@@ -216,62 +292,206 @@ const Dashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* REVENUE + PENDING VENDORS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* REVENUE + TOP PRODUCTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={`${cardStyle} col-span-2 p-6`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            whileHover={{ y: -10, rotateX: -3, rotateY: 2, scale: 1.01 }}
+            className={`glass-effect col-span-1 lg:col-span-2 p-8 card-3d group rounded-2xl border border-white/60`}
+            style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-[#1F3F32]">
-                Revenue Overview
-              </h2>
-              <select className="border rounded-lg px-3 py-1 text-sm bg-white">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Revenue Overview
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Weekly revenue performance</p>
+              </div>
+              <select className="glass-effect border border-white/60 rounded-lg px-4 py-2 text-sm bg-white/30 hover:bg-white/40 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-white/80 text-gray-700">
                 <option>Last 7 Days</option>
+                <option>Last 30 Days</option>
+                <option>Last 90 Days</option>
               </select>
             </div>
 
-            <div className="h-52">
+            <div className="h-64 -mx-2 group-hover:drop-shadow-lg transition-all">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData}>
-                  <XAxis dataKey="day" />
-                  <Tooltip />
+                <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <XAxis dataKey="day" stroke="#9CA3AF" style={{ fontSize: "12px" }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(10px)", border: "1px solid rgba(255, 255, 255, 0.8)", borderRadius: "12px", boxShadow: "0 20px 40px rgba(16, 185, 129, 0.15)" }}
+                    cursor={{ fill: "rgba(16, 185, 129, 0.1)" }}
+                  />
                   <Bar
                     dataKey="value"
-                    radius={[8, 8, 0, 0]}
-                    fill="#C9A24D"
+                    radius={[10, 10, 0, 0]}
+                    fill="url(#colorGradient)"
                   />
+                  <defs>
+                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10B981" />
+                      <stop offset="100%" stopColor="#6EE7B7" />
+                    </linearGradient>
+                  </defs>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ x: 20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className={`${cardStyle} p-6`}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            whileHover={{ y: -10, rotateX: -3, rotateY: -2, scale: 1.01 }}
+            className={`glass-effect p-8 card-3d rounded-2xl border border-white/60`}
+            style={{ transformStyle: "preserve-3d" }}
           >
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold text-red-500">
-                Top Selling Products
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Top Products
               </h2>
+              <p className="text-sm text-gray-600 mt-1">Most sold items</p>
             </div>
 
-            {topSellingProducts.map((v) => (
-              <motion.div
-                key={v.id}
-                whileHover={{ scale: 1.01 }}
-                className="flex justify-between items-center py-3 border-t border-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  <p className="font-medium text-sm">{v.name}</p>
-                  <p className="text-xs text-gray-500">{v.totalSold} sold</p>
-                </div>
-              </motion.div>
-            ))}
+            <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+              {topSellingProducts.length > 0 ? (
+                topSellingProducts.map((product, idx) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ x: 10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 + idx * 0.05 }}
+                    whileHover={{ x: 8, scale: 1.02 }}
+                    className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-300/20 to-transparent rounded-lg hover:from-emerald-300/40 hover:shadow-md transition-all group cursor-pointer backdrop-blur-sm border border-white/40 hover:border-white/60"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">{product.name}</p>
+                      <p className="text-sm text-gray-600">{product.totalSold} units sold</p>
+                    </div>
+                    <div className="bg-gradient-to-r from-emerald-300/40 to-green-300/20 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold group-hover:shadow-md transition-all backdrop-blur-sm border border-emerald-200/40">
+                      #{idx + 1}
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-8">No products sold yet</p>
+              )}
+            </div>
           </motion.div>
         </div>
+
+        {/* ORDER STATUS CARDS */}
+        <div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Order Status</h2>
+            <p className="text-sm text-gray-500 mt-1">Real-time order tracking across all statuses</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Delivered Orders */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            whileHover={{ y: -12, rotateX: -4, rotateY: 4, scale: 1.02 }}
+            className={`glass-effect p-8 border-l-4 border-l-emerald-400 group cursor-pointer card-3d rounded-2xl border border-white/60`}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                  Delivered Orders
+                </h3>
+                <p className="text-4xl font-bold text-emerald-600 mt-4">
+                  {orderStats.delivered}
+                </p>
+                <p className="text-xs text-emerald-600 font-medium mt-3">✓ Successfully completed</p>
+              </div>
+              <div className="bg-emerald-300/30 backdrop-blur-md p-4 rounded-xl text-emerald-600 group-hover:bg-emerald-300/50 group-hover:scale-125 transition-all duration-300 border border-emerald-200/40">
+                <CheckCircle2 size={28} strokeWidth={1.5} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Shipped Orders */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            whileHover={{ y: -12, rotateX: -4, rotateY: 4, scale: 1.02 }}
+            className={`glass-effect p-8 border-l-4 border-l-green-400 group cursor-pointer card-3d rounded-2xl border border-white/60`}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                  Shipped Orders
+                </h3>
+                <p className="text-4xl font-bold text-green-600 mt-4">
+                  {orderStats.shipped}
+                </p>
+                <p className="text-xs text-green-600 font-medium mt-3">🚚 On the way</p>
+              </div>
+              <div className="bg-green-300/30 backdrop-blur-md p-4 rounded-xl text-green-600 group-hover:bg-green-300/50 group-hover:scale-125 transition-all duration-300 border border-green-200/40">
+                <Truck size={28} strokeWidth={1.5} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Cancelled Orders */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            whileHover={{ y: -12, rotateX: -4, rotateY: 4, scale: 1.02 }}
+            className={`glass-effect p-8 border-l-4 border-l-teal-400 group cursor-pointer card-3d rounded-2xl border border-white/60`}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                  Cancelled Orders
+                </h3>
+                <p className="text-4xl font-bold text-teal-600 mt-4">
+                  {orderStats.cancelled}
+                </p>
+                <p className="text-xs text-teal-600 font-medium mt-3">✕ Cancelled</p>
+              </div>
+              <div className="bg-teal-300/30 backdrop-blur-md p-4 rounded-xl text-teal-600 group-hover:bg-teal-300/50 group-hover:scale-125 transition-all duration-300 border border-teal-200/40">
+                <XCircle size={28} strokeWidth={1.5} />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Pending Orders */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            whileHover={{ y: -12, rotateX: -4, rotateY: 4, scale: 1.02 }}
+            className={`glass-effect p-8 border-l-4 border-l-lime-400 group cursor-pointer card-3d rounded-2xl border border-white/60`}
+            style={{ transformStyle: "preserve-3d" }}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                  Pending Orders
+                </h3>
+                <p className="text-4xl font-bold text-lime-600 mt-4">
+                  {orderStats.pending}
+                </p>
+                <p className="text-xs text-lime-600 font-medium mt-3">⏳ Awaiting confirmation</p>
+              </div>
+              <div className="bg-lime-300/30 backdrop-blur-md p-4 rounded-xl text-lime-600 group-hover:bg-lime-300/50 group-hover:scale-125 transition-all duration-300 border border-lime-200/40">
+                <Clock size={28} strokeWidth={1.5} />
+              </div>
+            </div>
+          </motion.div>
+          </div>
+        </div>
+      </div>
       </div>
     </div>
   );

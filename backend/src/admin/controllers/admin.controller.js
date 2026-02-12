@@ -595,6 +595,104 @@ static async getTopSellingProducts(req, res) {
     });
   }
 }
+
+static async getOrderStatusBreakdown(req, res) {
+  try {
+    if (!req.user || !req.user.id) {
+      console.log('[ADMIN_CONTROLLER] Unauthorized: No user in request');
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized: Admin not authenticated'
+      });
+    }
+
+    if (req.user.role !== 'ADMIN') {
+      console.log('[ADMIN_CONTROLLER] User is not an admin. Role:', req.user.role);
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Only admins can access this resource'
+      });
+    }
+
+    const { category } = req.query;
+    const validCategories = ['DELIVERED', 'SHIPPED', 'CANCELLED', 'PENDING'];
+
+    // If category is provided, fetch specific order data for that category
+    if (category && validCategories.includes(category.toUpperCase())) {
+      const categoryUpper = category.toUpperCase();
+      const ordersResult = await pool.query(`
+        SELECT 
+          id,
+          order_number,
+          user_id,
+          total_amount,
+          order_status,
+          created_at
+        FROM orders
+        WHERE order_status = $1
+        ORDER BY created_at DESC
+      `, [categoryUpper]);
+
+      console.log(`[ADMIN_CONTROLLER] Retrieved ${ordersResult.rows.length} orders with status: ${categoryUpper}`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Orders with status '${categoryUpper}' retrieved successfully`,
+        data: {
+          status: categoryUpper,
+          count: ordersResult.rows.length,
+          orders: ordersResult.rows.map(order => ({
+            id: order.id,
+            orderNumber: order.order_number,
+            userId: order.user_id,
+            totalAmount: parseFloat(order.total_amount).toFixed(2),
+            orderStatus: order.status,
+            createdAt: order.created_at
+          }))
+        }
+      });
+    }
+
+    // If no category provided, return breakdown of all statuses
+    const statusBreakdownResult = await pool.query(`
+      SELECT 
+        order_status,
+        COUNT(*) as count
+      FROM orders
+      GROUP BY order_status
+      ORDER BY order_status
+    `);
+
+    // Initialize counts for all statuses
+    const breakdown = {
+      DELIVERED: 0,
+      SHIPPED: 0,
+      CANCELLED: 0,
+      PENDING: 0
+    };
+
+    // Populate counts from query results
+    statusBreakdownResult.rows.forEach(row => {
+      if (breakdown.hasOwnProperty(row.order_status)) {
+        breakdown[row.order_status] = parseInt(row.count, 10);
+      }
+    });
+
+    console.log('[ADMIN_CONTROLLER] Retrieved order status breakdown:', breakdown);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Order status breakdown retrieved successfully',
+      data: breakdown
+    });
+  } catch (error) {
+    console.error('[ADMIN_CONTROLLER] Error fetching order status breakdown:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
 }
 
 module.exports = AdminController;

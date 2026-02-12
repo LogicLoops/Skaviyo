@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   SquaresFour,
   Users,
@@ -39,64 +40,156 @@ const Sidebar: React.FC = () => {
     window.location.href = "/";
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { type: "spring" as const, stiffness: 100 },
+    },
+  };
+
   return (
-    <div className="fixed left-0 top-0 h-screen w-54 bg-white shadow-xl shadow-green-200 flex flex-col justify-between overflow-hidden">
-      {/* Logo Section */}
-      <div>
-        <Link to="/admin" className="flex items-center gap-3 px-6 py-5 hover:no-underline">
-          <div className="bg-green-800 text-white font-bold text-lg flex items-center justify-center h-9 w-9 rounded-md">
-            S
-          </div>
-          <h1 className="text-xl font-semibold text-green-900">Skaviyo</h1>
-        </Link>
+    <div className="fixed left-0 top-0 h-screen w-64 bg-gradient-to-b from-emerald-50 via-green-50 to-teal-50 flex flex-col justify-between overflow-hidden relative">
+      {/* Decorative background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-green-100 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+      </div>
+
+      <style>{`
+        .glass-item {
+          background: rgba(255, 255, 255, 0.5);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        .glass-item:hover {
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        .glass-item.active {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(34, 197, 94, 0.9));
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          color: white;
+        }
+      `}</style>
+
+      <div className="relative z-10">
+        {/* Logo Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Link to="/admin" className="flex items-center gap-3 px-6 py-6 hover:no-underline group">
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="bg-gradient-to-br from-emerald-500 to-green-600 text-white font-bold text-lg flex items-center justify-center h-12 w-12 rounded-xl shadow-lg group-hover:shadow-emerald-400/50"
+            >
+              S
+            </motion.div>
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-900 to-green-800 bg-clip-text text-transparent">Skaviyo</h1>
+              <p className="text-xs text-emerald-600 font-medium">Admin Panel</p>
+            </div>
+          </Link>
+        </motion.div>
 
         {/* Menu Items */}
-        <nav className="px-4 mt-2">
+        <motion.nav
+          className="px-4 mt-4"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 mb-1 rounded-lg transition-colors no-underline
-                  ${
-                    isActive
-                      ? "bg-green-800 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-              >
-                {item.icon}
-                <span className="text-sm font-medium">{item.name}</span>
-              </Link>
+              <motion.div key={item.path} variants={itemVariants}>
+                <Link
+                  to={item.path}
+                  className={`glass-item flex items-center gap-3 px-4 py-3.5 mb-2 rounded-xl transition-all duration-300 no-underline group
+                    ${isActive ? "active shadow-lg shadow-emerald-300/50" : "hover:shadow-md"}`}
+                  style={{
+                    transform: "preserve-3d",
+                  }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.15, rotate: 10 }}
+                    className={`${isActive ? "text-white" : "text-emerald-600 group-hover:text-emerald-700"} transition-colors`}
+                  >
+                    {item.icon}
+                  </motion.div>
+                  <span className={`text-sm font-semibold ${isActive ? "text-white" : "text-gray-700 group-hover:text-emerald-700"} transition-colors`}>
+                    {item.name}
+                  </span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeIndicator"
+                      className="ml-auto w-2 h-2 bg-white rounded-full"
+                      transition={{ type: "spring", stiffness: 200, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              </motion.div>
             );
           })}
-        </nav>
+        </motion.nav>
       </div>
 
       {/* Bottom Section */}
-      <div className="px-4 pb-6">
-        <div className="border-t border-gray-200 mb-4"></div>
+      <motion.div
+        className="px-4 pb-6 relative z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="border-t border-emerald-200/30 mb-4"></div>
 
-        <Link
-          to="/admin/settings"
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors no-underline mb-1
-            ${location.pathname === "/admin/settings"
-              ? "bg-green-800 text-white"
-              : "text-gray-600 hover:bg-gray-100"
-            }`}
-        >
-          <Gear size={20} />
-          <span className="text-sm font-medium">Settings</span>
-        </Link>
+        <motion.div variants={itemVariants}>
+          <Link
+            to="/admin/settings"
+            className={`glass-item flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-300 no-underline mb-2 group
+              ${location.pathname === "/admin/settings" ? "active shadow-lg shadow-emerald-300/50" : "hover:shadow-md"}`}
+          >
+            <motion.div
+              whileHover={{ scale: 1.15, rotate: -10 }}
+              className={`${location.pathname === "/admin/settings" ? "text-white" : "text-emerald-600 group-hover:text-emerald-700"} transition-colors`}
+            >
+              <Gear size={20} weight="duotone" />
+            </motion.div>
+            <span className={`text-sm font-semibold ${location.pathname === "/admin/settings" ? "text-white" : "text-gray-700 group-hover:text-emerald-700"} transition-colors`}>
+              Settings
+            </span>
+          </Link>
+        </motion.div>
 
-        <button
+        <motion.button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-gray-100 rounded-lg cursor-pointer transition-colors border-none bg-transparent"
+          whileHover={{ scale: 1.02, x: 2 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full glass-item flex items-center gap-3 px-4 py-3.5 text-red-500 hover:text-red-600 rounded-xl cursor-pointer transition-all duration-300 border-none font-semibold text-sm group"
         >
-          <SignOut size={20} />
-          <span className="text-sm font-medium">Logout</span>
-        </button>
-      </div>
+          <motion.div
+            whileHover={{ scale: 1.15, rotate: 10 }}
+          >
+            <SignOut size={20} weight="duotone" />
+          </motion.div>
+          <span>Logout</span>
+        </motion.button>
+      </motion.div>
     </div>
   );
 };

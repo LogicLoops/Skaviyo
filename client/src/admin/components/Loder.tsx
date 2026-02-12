@@ -11,7 +11,7 @@ const LottieLoader: React.FC<LottieLoaderProps> = ({
   message = "Loading...",
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 h-screen w-screen">
       <div style={{ width: 200, height: 120 }}>
         <Lottie animationData={loaderAnimation} loop autoplay />
       </div>
