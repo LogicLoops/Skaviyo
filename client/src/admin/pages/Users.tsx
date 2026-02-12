@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, Filter, ArrowUpDown, MoreVertical, Eye, ChevronLeft, ChevronRight, Trash2, Lock, Bell } from "lucide-react";
+import { Search, Filter, ArrowUpDown, MoreVertical, Eye, ChevronLeft, ChevronRight, Trash2, Lock } from "lucide-react";
+import Header from "../components/Header";
 import UserDetailsModal from "../components/UserDetailsModal";
 import LottieLoader from "../components/Loder";
-import Lottie from "lottie-react";
-import profile from "../../assets/lottie/profile.json";
 import {
   getAllCustomers,
   updateCustomerStatus,
   deleteCustomer,
 } from "../../api/services/usersService";
-import { getAdminDetails } from "../../api/services/dashboardService";
 
 export { Users as UserManagement };
 
@@ -27,7 +25,6 @@ interface Customer {
 const Users: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userName, setUserName] = useState<string>("Admin");
 
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
@@ -42,11 +39,6 @@ const Users: React.FC = () => {
   // Fetch customers on mount
   useEffect(() => {
     fetchCustomers();
-    getAdminDetails().then((data) => {
-      setUserName(data.name);
-    }).catch((err) => {
-      console.error("Error fetching admin details:", err);
-    });
   }, []);
 
   const fetchCustomers = async () => {
@@ -211,48 +203,11 @@ const Users: React.FC = () => {
       `}</style>
       
       <div className="p-8 relative z-10">
-        {/* HEADER - Matching Dashboard */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="flex justify-between items-center mb-12"
-        >
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-600 mt-1">Manage and monitor all customers</p>
-          </div>
-        
-                <div className="flex items-center gap-4">
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all border border-emerald-200"
-                  >
-                    <Search size={20} className="text-emerald-600" />
-                  </motion.div>
-        
-                  <motion.div
-                    whileHover={{ scale: 1.1 }}
-                    className="bg-white p-3 rounded-full shadow-md hover:shadow-lg transition-all border border-emerald-200 relative"
-                  >
-                    <Bell size={20} className="text-emerald-600" />
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-600 rounded-full"></span>
-                  </motion.div>
-        
-                  <motion.div
-                    whileHover={{ scale: 1.03 }}
-                    className="flex items-center gap-3 bg-white px-5 py-3 rounded-full shadow-md hover:shadow-lg transition-all ml-2 border border-emerald-200"
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
-                      <Lottie animationData={profile} loop={true} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">{userName}</p>
-                      <p className="text-xs text-gray-600">Super Admin</p>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
+        {/* HEADER */}
+        <Header
+          pageTitle="User Management"
+          pageSubtitle="Manage and monitor all customers"
+        />
 
         {/* MAIN CARD - Glass Effect */}
         <motion.div

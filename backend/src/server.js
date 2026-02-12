@@ -10,7 +10,16 @@ const authRoutes = require('./authorization/routes/auth');
 const adminRoutes = require('./admin/routes/admin.routes');
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || origin.endsWith(".ngrok-free.app")) {
+      callback(null, true)
+    } else {
+      callback(null, true) // allow localhost also
+    }
+  },
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.text({ type: 'text/plain' }));
 

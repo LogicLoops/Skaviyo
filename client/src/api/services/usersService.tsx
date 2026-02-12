@@ -10,6 +10,13 @@ interface Customer {
   createdAt: string;
 }
 
+interface OrderItem {
+  id: number;
+  productName: string;
+  quantity: number;
+  price: string;
+}
+
 interface Order {
   id: number;
   orderNumber: string;
@@ -17,7 +24,7 @@ interface Order {
   orderStatus: string;
   paymentStatus: string;
   createdAt: string;
-  items: number;
+  items: OrderItem[];
 }
 
 interface CustomerDetails {
