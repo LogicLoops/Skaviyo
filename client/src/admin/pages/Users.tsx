@@ -410,11 +410,7 @@ const Users: React.FC = () => {
                           >
                             <MoreVertical size={16} />
                           </motion.button>
-                          <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            whileInView={{ opacity: 0 }}
-                            className="absolute right-0 mt-2 w-48 bg-white border border-emerald-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition z-20"
-                          >
+                          <div className="absolute right-0 mt-2 w-48 bg-white border border-emerald-200 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition z-20">
                             <motion.button
                               whileHover={{ x: 4, backgroundColor: "rgba(240, 253, 250, 1)" }}
                               onClick={() => handleDeactivateUser(customer.id, customer.status)}
@@ -431,7 +427,7 @@ const Users: React.FC = () => {
                               <Trash2 size={14} />
                               Delete User
                             </motion.button>
-                          </motion.div>
+                          </div>
                         </div>
                       </div>
                     </td>
