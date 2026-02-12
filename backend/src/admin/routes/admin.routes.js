@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const AdminController = require('../controllers/admin.controller');
-const AdminUserControllers = require('../controllers/admin.user.controller');
+const AdminUserControllers = require('../controllers/admin.user.controllers');
 const { verifyToken } = require('../../authorization/middleware/auth');
 
 // All routes below require authentication
@@ -37,7 +37,16 @@ router.get('/orders/status-breakdown', AdminController.getOrderStatusBreakdown);
 // Get top selling products
 router.get('/top-selling-products', AdminController.getTopSellingProducts);
 
-router.get('/user-details/:id',AdminUserControllers.getUserDetailsById);
+// Customer management routes
+router.get('/customers/all', AdminUserControllers.getAllCustomers);
+
+router.get('/customers/:id', AdminUserControllers.getCustomerDetailWithOrders);
+
+router.put('/customers/:id/status', AdminUserControllers.deactivateCustomer);
+
+router.delete('/customers/:id', AdminUserControllers.deleteCustomer);
+
+router.get('/user-details/:id', AdminUserControllers.getUserDetailsById);
 
 module.exports = router;
 
