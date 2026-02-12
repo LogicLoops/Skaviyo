@@ -1,7 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { X, Loader } from "lucide-react";
+import { X, Loader, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { getCustomerDetails } from "../../api/services/usersService";
+
+interface OrderItem {
+  id: number;
+  productName: string;
+  quantity: number;
+  price: string;
+}
 
 interface Order {
   id: number;
@@ -10,7 +17,7 @@ interface Order {
   orderStatus: string;
   paymentStatus: string;
   createdAt: string;
-  items: number;
+  items: OrderItem[];
 }
 
 interface CustomerDetailsData {
@@ -38,6 +45,7 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
 }) => {
   const [customerDetails, setCustomerDetails] = useState<CustomerDetailsData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen && customerId) {
@@ -251,45 +259,99 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.25 + idx * 0.05 }}
-                        whileHover={{ x: 4, boxShadow: "0 10px 30px rgba(15, 109, 91, 0.1)" }}
-                        className="bg-white border border-[#E6EFEC] rounded-xl p-6 hover:bg-gradient-to-r hover:from-emerald-50/50 to-white transition-all duration-200"
+                        className="bg-white border border-[#E6EFEC] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-200"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <p className="font-bold text-gray-900 text-base">
-                              {order.orderNumber}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(order.createdAt).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric"
-                              })}
-                            </p>
+                        {/* Order Header */}
+                        <motion.button
+                          whileHover={{ x: 4 }}
+                          onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                          className="w-full p-6 text-left hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-white transition-all duration-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="font-bold text-gray-900 text-base">
+                                {order.orderNumber}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(order.createdAt).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric"
+                                })}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <p className="text-2xl font-bold text-[#0F6D5B]">
+                                ₹{order.totalAmount}
+                              </p>
+                              <motion.div
+                                animate={{ rotate: expandedOrderId === order.id ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <ChevronDown size={20} className="text-gray-400" />
+                              </motion.div>
+                            </div>
                           </div>
-                          <p className="text-2xl font-bold text-[#0F6D5B]">
-                            ₹{order.totalAmount}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getOrderStatusColor(
-                              order.orderStatus
-                            )}`}
-                          >
-                            {order.orderStatus}
-                          </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(
-                              order.paymentStatus
-                            )}`}
-                          >
-                            {order.paymentStatus}
-                          </span>
-                          <span className="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full font-medium">
-                            {order.items} items
-                          </span>
-                        </div>
+                          <div className="flex items-center gap-3 flex-wrap mt-4">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${getOrderStatusColor(
+                                order.orderStatus
+                              )}`}
+                            >
+                              {order.orderStatus}
+                            </span>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${getPaymentStatusColor(
+                                order.paymentStatus
+                              )}`}
+                            >
+                              {order.paymentStatus}
+                            </span>
+                            <span className="text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full font-medium">
+                              {Array.isArray(order.items) ? order.items.length : order.items} items
+                            </span>
+                          </div>
+                        </motion.button>
+
+                        {/* Order Items */}
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{
+                            height: expandedOrderId === order.id ? "auto" : 0,
+                            opacity: expandedOrderId === order.id ? 1 : 0
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden border-t border-[#E6EFEC]"
+                        >
+                          <div className="p-6 bg-gradient-to-b from-emerald-50/30 to-white space-y-3">
+                            {Array.isArray(order.items) && order.items.length > 0 ? (
+                              <>
+                                <p className="text-xs text-[#6B7C78] uppercase font-bold tracking-wider mb-4">
+                                  Items Purchased
+                                </p>
+                                {order.items.map((item, itemIdx) => (
+                                  <motion.div
+                                    key={`${order.id}-${item.id}-${itemIdx}`}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.05 * itemIdx }}
+                                    className="flex items-center justify-between p-4 bg-white rounded-lg border border-[#E6EFEC] hover:border-emerald-300 transition-all"
+                                  >
+                                    <div className="flex-1">
+                                      <p className="font-semibold text-gray-900">{item.productName}</p>
+                                      <p className="text-xs text-gray-600 mt-1">Quantity: {item.quantity}</p>
+                                    </div>
+                                    <p className="text-sm font-bold text-[#0F6D5B] ml-4">
+                                      ₹{item.price}
+                                    </p>
+                                  </motion.div>
+                                ))}
+                              </>
+                            ) : (
+                              <p className="text-sm text-gray-500 text-center py-4">No items found for this order</p>
+                            )}
+                          </div>
+                        </motion.div>
                       </motion.div>
                     ))}
                   </div>
