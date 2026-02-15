@@ -33,10 +33,7 @@ class _OtpScreenState extends State<OtpScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF10B981),
-                  width: 2,
-                ),
+                border: Border.all(color: const Color(0xFF10B981), width: 2),
               ),
               child: Center(
                 child: Icon(
@@ -49,16 +46,16 @@ class _OtpScreenState extends State<OtpScreen> {
             const SizedBox(height: 24),
             Text(
               'Verify Your Phone Number',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Enter the 6-digit code we sent to your phone',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 40),
             OtpForm(
@@ -70,10 +67,7 @@ class _OtpScreenState extends State<OtpScreen> {
               },
             ),
             const SizedBox(height: 24),
-            TextButton(
-              onPressed: () {},
-              child: const Text('Resend Code'),
-            ),
+            TextButton(onPressed: () {}, child: const Text('Resend Code')),
           ],
         ),
       ),

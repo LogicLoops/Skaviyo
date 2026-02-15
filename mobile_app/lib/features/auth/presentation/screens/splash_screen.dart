@@ -83,10 +83,10 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Text(
                       'S',
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                            color: const Color(0xFF10B981),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 80,
-                          ),
+                        color: const Color(0xFF10B981),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 80,
+                      ),
                     ),
                   ),
                 ),
@@ -95,21 +95,21 @@ class _SplashScreenState extends State<SplashScreen>
                 Text(
                   'SKAVIYO',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 40,
-                        letterSpacing: 2,
-                      ),
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 40,
+                    letterSpacing: 2,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // Tagline
                 Text(
                   'Your Shopping Destination',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w300,
-                      ),
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w300,
+                  ),
                 ),
               ],
             ),

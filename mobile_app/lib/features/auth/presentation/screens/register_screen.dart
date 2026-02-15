@@ -33,10 +33,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: const Color(0xFF10B981),
-                  width: 2,
-                ),
+                border: Border.all(color: const Color(0xFF10B981), width: 2),
               ),
               child: Center(
                 child: Icon(
@@ -49,16 +46,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 24),
             Text(
               'Complete Your Profile',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Set up your account to get started',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
             ),
             const SizedBox(height: 40),
             RegisterForm(

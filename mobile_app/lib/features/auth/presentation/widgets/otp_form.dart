@@ -76,18 +76,16 @@ class _OtpFormState extends State<OtpForm> {
                   children: [
                     Text(
                       'Verification code sent to',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         Text(
                           _maskPhone(authProvider.phone ?? ''),
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
@@ -124,9 +122,9 @@ class _OtpFormState extends State<OtpForm> {
                 textAlign: TextAlign.center,
                 validator: _validateOtp,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 8,
+                ),
                 decoration: InputDecoration(
                   hintText: '000000',
                   hintStyle: TextStyle(
@@ -157,10 +155,7 @@ class _OtpFormState extends State<OtpForm> {
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.red[400]!,
-                      width: 2,
-                    ),
+                    borderSide: BorderSide(color: Colors.red[400]!, width: 2),
                   ),
                 ),
                 onChanged: (value) {
@@ -181,10 +176,7 @@ class _OtpFormState extends State<OtpForm> {
                   ),
                   child: Text(
                     authProvider.error!,
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.red[700], fontSize: 13),
                   ),
                 ),
               if (authProvider.error != null) const SizedBox(height: 16),
@@ -217,15 +209,14 @@ class _OtpFormState extends State<OtpForm> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(
                           'Verify OTP',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -250,9 +241,9 @@ class _OtpFormState extends State<OtpForm> {
                     child: Text(
                       'Resend',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF10B981),
-                            fontWeight: FontWeight.bold,
-                          ),
+                        color: const Color(0xFF10B981),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],

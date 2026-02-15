@@ -5,10 +5,7 @@ import '../providers/auth_provider.dart';
 class RegisterForm extends StatefulWidget {
   final VoidCallback onRegistered;
 
-  const RegisterForm({
-    Key? key,
-    required this.onRegistered,
-  }) : super(key: key);
+  const RegisterForm({Key? key, required this.onRegistered}) : super(key: key);
 
   @override
   State<RegisterForm> createState() => _RegisterFormState();
@@ -84,19 +81,13 @@ class _RegisterFormState extends State<RegisterForm> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: _validateEmail,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.black, fontSize: 16),
                 decoration: InputDecoration(
                   labelText: 'Email Address',
                   labelStyle: TextStyle(color: Colors.grey[600]),
                   hintText: 'your@email.com',
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: const Icon(
-                    Icons.email,
-                    color: Color(0xFF10B981),
-                  ),
+                  prefixIcon: const Icon(Icons.email, color: Color(0xFF10B981)),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -130,19 +121,13 @@ class _RegisterFormState extends State<RegisterForm> {
                 controller: _passwordController,
                 obscureText: true,
                 validator: _validatePassword,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.black, fontSize: 16),
                 decoration: InputDecoration(
                   labelText: 'Password',
                   labelStyle: TextStyle(color: Colors.grey[600]),
                   hintText: 'At least 6 characters',
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: const Icon(
-                    Icons.lock,
-                    color: Color(0xFF10B981),
-                  ),
+                  prefixIcon: const Icon(Icons.lock, color: Color(0xFF10B981)),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -176,19 +161,13 @@ class _RegisterFormState extends State<RegisterForm> {
                 controller: _confirmPasswordController,
                 obscureText: true,
                 validator: _validateConfirmPassword,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.black, fontSize: 16),
                 decoration: InputDecoration(
                   labelText: 'Confirm Password',
                   labelStyle: TextStyle(color: Colors.grey[600]),
                   hintText: 'Re-enter your password',
                   hintStyle: TextStyle(color: Colors.grey[400]),
-                  prefixIcon: const Icon(
-                    Icons.lock,
-                    color: Color(0xFF10B981),
-                  ),
+                  prefixIcon: const Icon(Icons.lock, color: Color(0xFF10B981)),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
@@ -226,10 +205,7 @@ class _RegisterFormState extends State<RegisterForm> {
                   ),
                   child: Text(
                     authProvider.error!,
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.red[700], fontSize: 13),
                   ),
                 ),
               if (authProvider.error != null) const SizedBox(height: 16),
@@ -262,15 +238,14 @@ class _RegisterFormState extends State<RegisterForm> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(
                           'Create Account',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,

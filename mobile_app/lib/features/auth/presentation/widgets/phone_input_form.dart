@@ -84,7 +84,10 @@ class _PhoneInputFormState extends State<PhoneInputForm> {
                   fillColor: widget.isDarkTheme
                       ? Colors.white.withOpacity(0.15)
                       : Colors.grey[100],
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
@@ -112,16 +115,11 @@ class _PhoneInputFormState extends State<PhoneInputForm> {
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.red[400]!,
-                    ),
+                    borderSide: BorderSide(color: Colors.red[400]!),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Colors.red[400]!,
-                      width: 2,
-                    ),
+                    borderSide: BorderSide(color: Colors.red[400]!, width: 2),
                   ),
                 ),
                 onChanged: (value) {
@@ -142,10 +140,7 @@ class _PhoneInputFormState extends State<PhoneInputForm> {
                   ),
                   child: Text(
                     authProvider.error!,
-                    style: TextStyle(
-                      color: Colors.red[700],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.red[700], fontSize: 13),
                   ),
                 ),
               if (authProvider.error != null) const SizedBox(height: 14),
@@ -194,9 +189,7 @@ class _PhoneInputFormState extends State<PhoneInputForm> {
                         )
                       : Text(
                           'Get OTP',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: widget.isDarkTheme
                                     ? const Color(0xFF10B981)
