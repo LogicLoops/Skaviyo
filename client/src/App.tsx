@@ -15,8 +15,8 @@ import {
   VendorDashboard,
   VendorProducts,
   VendorOrders,
-  VendorCategories,
-  VendorReports,
+  VendorEarnings,
+  VendorReviews,
   VendorSettings
 } from './routes/routes';
 
@@ -45,8 +45,8 @@ function App() {
           <Route path="/vendor-dashboard" element={<VendorDashboard />} />
           <Route path="/vendor-dashboard/products" element={<VendorProducts />} />
           <Route path="/vendor-dashboard/orders" element={<VendorOrders />} />
-          <Route path="/vendor-dashboard/categories" element={<VendorCategories />} />
-          <Route path="/vendor-dashboard/reports" element={<VendorReports />} />
+          <Route path="/vendor-dashboard/earnings" element={<VendorEarnings />} />
+          <Route path="/vendor-dashboard/reviews" element={<VendorReviews />} />
           <Route path="/vendor-dashboard/settings" element={<VendorSettings />} />
         </Route>
 

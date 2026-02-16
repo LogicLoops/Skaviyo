@@ -1,187 +1,368 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Package, ShoppingBag, Clock, Ellipsis, Wallet } from "lucide-react";
-import { BarChart, Bar, XAxis, ResponsiveContainer } from "recharts";
+import {
+  Package,
+  ShoppingBag,
+  IndianRupee,
+  Clock,
+  CheckCircle2,
+  Truck,
+  XCircle,
+} from "lucide-react";
+import Header from "../components/Header";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  Tooltip,
+} from "recharts";
 
 interface TopProduct {
   id: number;
-  vendorUserId: number;
   name: string;
-  sales: number;
-  revenue: string;
-  image: string;
+  totalSold: number;
+}
+
+interface KPI {
+  title: string;
+  value: string;
+  sub: string;
+  icon: React.ReactNode;
 }
 
 const revenueData = [
-  { month: "Jan", value: 12000 },
-  { month: "Feb", value: 16000 },
-  { month: "Mar", value: 13500 },
-  { month: "Apr", value: 20500 },
-  { month: "May", value: 17500 },
-  { month: "Jun", value: 25000 },
-  { month: "Jul", value: 22000 },
+  { day: "Mon", value: 4200 },
+  { day: "Tue", value: 5200 },
+  { day: "Wed", value: 4800 },
+  { day: "Thu", value: 8200 },
+  { day: "Fri", value: 5600 },
+  { day: "Sat", value: 6100 },
+  { day: "Sun", value: 5900 },
 ];
 
-const allTopProducts: TopProduct[] = [
-  { id: 1, vendorUserId: 2, name: "Minimalist Watch", sales: 1204, revenue: "$45k", image: "⌚" },
-  { id: 2, vendorUserId: 2, name: "Pro Audio Set", sales: 843, revenue: "$28k", image: "🎧" },
-  { id: 3, vendorUserId: 2, name: "Sport Runners", sales: 621, revenue: "$15k", image: "👟" },
-  { id: 4, vendorUserId: 2, name: "Ergo Chair 2", sales: 410, revenue: "$12k", image: "💺" },
-  { id: 5, vendorUserId: 7, name: "Denim Jeans", sales: 900, revenue: "$21k", image: "👖" },
-  { id: 6, vendorUserId: 7, name: "Cotton Tee", sales: 780, revenue: "$13k", image: "👕" },
-];
+const kpiCardStyle =
+  "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300";
 
-const recentOrders = [
-  { id: "#ORD-2481", product: "Classic Sunglasses", date: "Oct 24, 2023", status: "Completed", amount: "$129.00", icon: "🕶️" },
-  { id: "#ORD-2480", product: "Instax Mini 11", date: "Oct 24, 2023", status: "Processing", amount: "$89.00", icon: "📷" },
-  { id: "#ORD-2479", product: "Leather Wallet", date: "Oct 23, 2023", status: "Pending", amount: "$45.00", icon: "👛" },
-  { id: "#ORD-2478", product: "Macbook Stand", date: "Oct 23, 2023", status: "Completed", amount: "$59.99", icon: "💻" },
-];
-
-const metrics = [
-  { title: "Total Products", value: "124", sub: "↗ +12 added this month", Icon: Package },
-  { title: "Total Orders", value: "856", sub: "↗ +8.2 % vs last month", Icon: ShoppingBag },
-  { title: "Monthly Revenue", value: "$12,450", sub: "↗ +15.3% growth", Icon: Wallet },
-  { title: "Pending Orders", value: "18", sub: "Needs attention", Icon: Clock },
-];
-
-const getUserIdFromToken = (): number | null => {
+const getVendorNameFromToken = (): string => {
   try {
     const token = localStorage.getItem("token");
-    if (!token) return null;
+    if (!token) return "Vendor";
     const payload = JSON.parse(atob(token.split(".")[1]));
-    const userId = Number(payload.id);
-    return Number.isNaN(userId) ? null : userId;
+    return payload.vendorName || payload.name || "Vendor";
   } catch {
-    return null;
+    return "Vendor";
   }
 };
 
 const VendorDashboard: React.FC = () => {
-  const loggedInVendorUserId = getUserIdFromToken();
+  const [vendorName, setVendorName] = useState<string>("Vendor");
+  const [kpis, setKpis] = useState<KPI[]>([
+    {
+      title: "Total Products",
+      value: "0",
+      sub: "↑ +12% this month",
+      icon: <Package size={22} />,
+    },
+    {
+      title: "Total Orders",
+      value: "0",
+      sub: "↑ +8.2% vs last week",
+      icon: <ShoppingBag size={22} />,
+    },
+    {
+      title: "Revenue",
+      value: "₹0",
+      sub: "↑ +15% year over year",
+      icon: <IndianRupee size={22} />,
+    },
+    {
+      title: "Pending Orders",
+      value: "0",
+      sub: "Needs attention",
+      icon: <Clock size={22} />,
+    },
+  ]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [orderStats, setOrderStats] = useState({
+    completed: 0,
+    shipped: 0,
+    cancelled: 0,
+    pending: 0,
+  });
 
-  const vendorTopProducts = useMemo(() => {
-    const filtered = allTopProducts.filter((product) => product.vendorUserId === loggedInVendorUserId);
-    return filtered.length > 0 ? filtered : allTopProducts.filter((product) => product.vendorUserId === 2);
-  }, [loggedInVendorUserId]);
+  useEffect(() => {
+    // Set vendor name from token
+    const name = getVendorNameFromToken();
+    setVendorName(name);
+
+    // Initialize with sample data - in production, fetch from API
+    setKpis([
+      {
+        title: "Total Products",
+        value: "24",
+        sub: "↑ +12% this month",
+        icon: <Package size={22} />,
+      },
+      {
+        title: "Total Orders",
+        value: "156",
+        sub: "↑ +8.2% vs last week",
+        icon: <ShoppingBag size={22} />,
+      },
+      {
+        title: "Revenue",
+        value: "₹45.2k",
+        sub: "↑ +15% year over year",
+        icon: <IndianRupee size={22} />,
+      },
+      {
+        title: "Pending Orders",
+        value: "5",
+        sub: "Needs attention",
+        icon: <Clock size={22} />,
+      },
+    ]);
+
+    setTopProducts([
+      { id: 1, name: "Premium Watch", totalSold: 1204 },
+      { id: 2, name: "Wireless Earbuds", totalSold: 843 },
+      { id: 3, name: "Phone Case", totalSold: 621 },
+      { id: 4, name: "Screen Protector", totalSold: 410 },
+    ]);
+
+    setOrderStats({
+      completed: 120,
+      shipped: 32,
+      cancelled: 4,
+      pending: 5,
+    });
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#e8f3ee] p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-[34px] font-bold text-[#0f4d41] leading-none">Dashboard Overview</h1>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 relative overflow-y-auto">
+      <div className="p-8">
+        <Header
+          pageTitle="Dashboard"
+          pageSubtitle="Manage your business efficiently"
+          vendorName="Vendor Manager"
+          vendorRole="Vendor"
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-          {metrics.map((metric, idx) => (
+        {/* KPI CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {kpis.map((kpi, idx) => (
             <motion.div
-              key={metric.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="bg-[#f4f6f5] border border-[#e0ebe5] rounded-2xl p-5"
+              key={idx}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: idx * 0.1, type: "spring", stiffness: 100 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className={`${kpiCardStyle} p-6 group cursor-pointer`}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-[12px] text-[#7c9288]">{metric.title}</p>
-                  <p className="text-[38px] leading-none font-bold text-[#0f6a53] mt-3">{metric.value}</p>
-                  <p className="text-[11px] text-[#0f6a53] mt-3">{metric.sub}</p>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wider">
+                    {kpi.title}
+                  </h3>
+                  <p className="text-4xl font-bold text-gray-900 mt-3">
+                    {kpi.value}
+                  </p>
+                  <p className="text-xs text-emerald-600 font-medium mt-3">{kpi.sub}</p>
                 </div>
-                <div className="w-7 h-7 rounded-full bg-[#efe9d8] flex items-center justify-center text-[#bc9c4c]">
-                  <metric.Icon size={14} />
+                <div className="bg-emerald-50 p-4 rounded-xl text-emerald-600 group-hover:bg-emerald-100 transition-all duration-300 group-hover:scale-110 border border-emerald-200">
+                  {kpi.icon}
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
-          <div className="xl:col-span-2 bg-[#f4f6f5] border border-[#dbe9e2] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[22px] font-bold text-[#0f4d41]">Revenue Analytics</h2>
-              <button className="text-[12px] text-[#2b8d73] font-semibold">View Report</button>
+        {/* REVENUE + TOP PRODUCTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            whileHover={{ y: -5, scale: 1.01 }}
+            className={`${kpiCardStyle} col-span-1 lg:col-span-2 p-8`}
+          >
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Revenue Overview
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">Weekly revenue performance</p>
+              </div>
+              <select className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-sm transition duration-200 focus:outline-none cursor-pointer">
+                <option>Last 7 Days</option>
+                <option>Last 30 Days</option>
+                <option>Last 90 Days</option>
+              </select>
             </div>
-            <div className="h-60">
+
+            <div className="h-64 -mx-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData} margin={{ top: 10, right: 8, left: 0, bottom: 8 }}>
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#97a89f", fontSize: 12 }} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#c9ab5f" />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} fill="#0f6a53" data={[{}, {}, {}, {}, {}, { value: 25000 }, {}]} />
+                <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                  <XAxis dataKey="day" stroke="#9CA3AF" style={{ fontSize: "12px" }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "rgba(255, 255, 255, 0.95)", border: "1px solid #e5e7eb", borderRadius: "8px" }}
+                    cursor={{ fill: "rgba(16, 185, 129, 0.1)" }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    radius={[10, 10, 0, 0]}
+                    fill="#10B981"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-[#f4f6f5] border border-[#dbe9e2] rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[22px] font-bold text-[#0f4d41]">Top Products</h2>
-              <Ellipsis size={16} className="text-[#799084]" />
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            whileHover={{ y: -5, scale: 1.01 }}
+            className={`${kpiCardStyle} p-8`}
+          >
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Top Products
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">Most sold items</p>
             </div>
-            <div className="space-y-3">
-              {vendorTopProducts.map((product) => (
-                <div key={product.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-[#e7ece9] flex items-center justify-center text-sm">{product.image}</div>
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-semibold text-[#0f4d41] truncate">{product.name}</p>
-                      <p className="text-[11px] text-[#8ca196]">{product.sales.toLocaleString()} sales</p>
+
+            <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+              {topProducts.length > 0 ? (
+                topProducts.map((product, idx) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ x: 10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 + idx * 0.05 }}
+                    whileHover={{ x: 8, scale: 1.02 }}
+                    className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all group cursor-pointer border border-emerald-200"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-800 group-hover:text-emerald-700 transition-colors">{product.name}</p>
+                      <p className="text-sm text-gray-600">{product.totalSold} units sold</p>
                     </div>
-                  </div>
-                  <p className="text-[16px] font-bold text-[#0f6a53]">{product.revenue}</p>
-                </div>
-              ))}
+                    <div className="bg-emerald-200 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold group-hover:shadow-md transition-all border border-emerald-300">
+                      #{idx + 1}
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-8">No products sold yet</p>
+              )}
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="bg-[#f4f6f5] border border-[#dbe9e2] rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[22px] font-bold text-[#0f4d41]">Recent Orders</h2>
-            <button className="text-[12px] text-[#2b8d73] font-semibold">View All Orders</button>
+        {/* ORDER STATUS CARDS */}
+        <div>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">Order Status</h2>
+            <p className="text-sm text-gray-500 mt-1">Real-time order tracking across all statuses</p>
           </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Completed Orders */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className={`${kpiCardStyle} p-8 border-l-4 border-l-emerald-400 group cursor-pointer`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                    Completed Orders
+                  </h3>
+                  <p className="text-4xl font-bold text-emerald-600 mt-4">
+                    {orderStats.completed}
+                  </p>
+                  <p className="text-xs text-emerald-600 font-medium mt-3">✓ Successfully completed</p>
+                </div>
+                <div className="bg-emerald-100 p-4 rounded-xl text-emerald-600 group-hover:bg-emerald-200 group-hover:scale-125 transition-all duration-300 border border-emerald-200">
+                  <CheckCircle2 size={28} strokeWidth={1.5} />
+                </div>
+              </div>
+            </motion.div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-[12px] text-[#8da196] border-b border-[#e0ebe5]">
-                  <th className="py-3 font-semibold">Order ID</th>
-                  <th className="py-3 font-semibold">Product</th>
-                  <th className="py-3 font-semibold">Date</th>
-                  <th className="py-3 font-semibold">Status</th>
-                  <th className="py-3 font-semibold">Amount</th>
-                  <th className="py-3 font-semibold">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-[#edf3ef] last:border-b-0">
-                    <td className="py-4 text-[13px] text-[#2b8d73] font-semibold">{order.id}</td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-md bg-[#e7ece9] flex items-center justify-center text-xs">{order.icon}</div>
-                        <span className="text-[13px] text-[#0f4d41]">{order.product}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 text-[13px] text-[#587369]">{order.date}</td>
-                    <td className="py-4">
-                      <span className={`px-3 py-1 rounded-full text-[11px] font-semibold ${
-                        order.status === "Completed"
-                          ? "bg-[#e5f3ed] text-[#157a5f]"
-                          : order.status === "Processing"
-                          ? "bg-[#e8efff] text-[#3d6dd9]"
-                          : "bg-[#fff4df] text-[#c48a28]"
-                      }`}>
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="py-4 text-[13px] text-[#0f6a53] font-semibold">{order.amount}</td>
-                    <td className="py-4">
-                      <button className="text-[13px] text-[#2b8d73] font-semibold">Details</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Shipped Orders */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className={`${kpiCardStyle} p-8 border-l-4 border-l-green-400 group cursor-pointer`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                    Shipped Orders
+                  </h3>
+                  <p className="text-4xl font-bold text-green-600 mt-4">
+                    {orderStats.shipped}
+                  </p>
+                  <p className="text-xs text-green-600 font-medium mt-3">🚚 On the way</p>
+                </div>
+                <div className="bg-green-100 p-4 rounded-xl text-green-600 group-hover:bg-green-200 group-hover:scale-125 transition-all duration-300 border border-green-200">
+                  <Truck size={28} strokeWidth={1.5} />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Cancelled Orders */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className={`${kpiCardStyle} p-8 border-l-4 border-l-red-400 group cursor-pointer`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                    Cancelled Orders
+                  </h3>
+                  <p className="text-4xl font-bold text-red-600 mt-4">
+                    {orderStats.cancelled}
+                  </p>
+                  <p className="text-xs text-red-600 font-medium mt-3">✕ Cancelled</p>
+                </div>
+                <div className="bg-red-100 p-4 rounded-xl text-red-600 group-hover:bg-red-200 group-hover:scale-125 transition-all duration-300 border border-red-200">
+                  <XCircle size={28} strokeWidth={1.5} />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Pending Orders */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className={`${kpiCardStyle} p-8 border-l-4 border-l-yellow-400 group cursor-pointer`}
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <h3 className="text-gray-700 text-sm font-semibold uppercase tracking-wider">
+                    Pending Orders
+                  </h3>
+                  <p className="text-4xl font-bold text-yellow-600 mt-4">
+                    {orderStats.pending}
+                  </p>
+                  <p className="text-xs text-yellow-600 font-medium mt-3">⏳ Awaiting confirmation</p>
+                </div>
+                <div className="bg-yellow-100 p-4 rounded-xl text-yellow-600 group-hover:bg-yellow-200 group-hover:scale-125 transition-all duration-300 border border-yellow-200">
+                  <Clock size={28} strokeWidth={1.5} />
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </div>

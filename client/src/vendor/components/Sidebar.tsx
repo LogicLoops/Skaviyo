@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Star, IndianRupee } from "lucide-react";
 import {
   SquaresFour,
   TShirt,
@@ -21,8 +22,8 @@ const menuItems: MenuItem[] = [
   { name: "Dashboard", path: "/vendor-dashboard", icon: <SquaresFour size={20} weight="duotone" /> },
   { name: "Products", path: "/vendor-dashboard/products", icon: <TShirt size={20} weight="duotone" /> },
   { name: "Orders", path: "/vendor-dashboard/orders", icon: <ShoppingBag size={20} weight="duotone" /> },
-  { name: "Categories", path: "/vendor-dashboard/categories", icon: <Stack size={20} weight="duotone" /> },
-  { name: "Reports", path: "/vendor-dashboard/reports", icon: <ChartBar size={20} weight="duotone" /> },
+  { name: "Earnings", path: "/vendor-dashboard/earnings", icon: <IndianRupee size={20} /> },
+  { name: "Reviews", path: "/vendor-dashboard/reviews", icon: <Star size={20} /> },
 ];
 
 const Sidebar: React.FC = () => {

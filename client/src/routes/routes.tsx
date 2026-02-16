@@ -13,8 +13,8 @@ import Settings from '../admin/pages/Settings';
 import VendorDashboard from '../vendor/pages/dashboard';
 import VendorProducts from '../vendor/pages/products';
 import VendorOrders from '../vendor/pages/orders';
-import VendorCategories from '../vendor/pages/categories';
-import VendorReports from '../vendor/pages/reports';
+import VendorEarnings from '../vendor/pages/earnings';
+import VendorReviews from '../vendor/pages/reviews';
 import VendorSettings from '../vendor/pages/settings';
 
 export {
@@ -33,7 +33,7 @@ export {
   VendorDashboard,
   VendorProducts,
   VendorOrders,
-  VendorCategories,
-  VendorReports,
+  VendorEarnings,
+  VendorReviews,
   VendorSettings
 };
