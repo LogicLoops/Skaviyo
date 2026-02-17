@@ -44,19 +44,7 @@ const revenueData = [
 const kpiCardStyle =
   "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300";
 
-const getVendorNameFromToken = (): string => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return "Vendor";
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.vendorName || payload.name || "Vendor";
-  } catch {
-    return "Vendor";
-  }
-};
-
 const VendorDashboard: React.FC = () => {
-  const [vendorName, setVendorName] = useState<string>("Vendor");
   const [kpis, setKpis] = useState<KPI[]>([
     {
       title: "Total Products",
@@ -92,10 +80,6 @@ const VendorDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    // Set vendor name from token
-    const name = getVendorNameFromToken();
-    setVendorName(name);
-
     // Initialize with sample data - in production, fetch from API
     setKpis([
       {
@@ -140,7 +124,16 @@ const VendorDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 relative overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 relative overflow-y-auto scrollbar-hide">
+      <style>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       <div className="p-8">
         <Header
           pageTitle="Dashboard"

@@ -4,7 +4,6 @@ import {
   Search,
   Filter,
   Download,
-  Settings,
   Eye,
   MoreVertical,
   X,
@@ -26,7 +25,7 @@ interface Order {
   total: number;
 }
 
-const mockOrders: Order[] = [
+const initialOrders: Order[] = [
   {
     id: "ORD-7882",
     customerName: "Sarah Jenkins",
@@ -80,12 +79,18 @@ const mockOrders: Order[] = [
 ];
 
 const Orders: React.FC = () => {
+  const [mockOrders, setMockOrders] = useState(initialOrders);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showDateDropdown, setShowDateDropdown] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+  const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
+  const [orderToUpdate, setOrderToUpdate] = useState<Order | null>(null);
+  const itemsPerPage = 5;
 
   const totalOrders = mockOrders.length;
   const pendingOrders = mockOrders.filter((o) => o.status === "Pending").length;
@@ -103,6 +108,13 @@ const Orders: React.FC = () => {
     const matchesStatus = filterStatus === "All" || order.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
+
+  const totalFilteredOrders = filteredOrders.length;
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(totalFilteredOrders / itemsPerPage);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -135,11 +147,79 @@ const Orders: React.FC = () => {
   };
 
   const handleExportCSV = () => {
-    alert("Exporting CSV...");
+    // Create CSV content
+    const headers = ["Order ID", "Customer Name", "Email", "Date", "Status", "Items", "Total"];
+    const rows = filteredOrders.map((order) => [
+      order.id,
+      order.customerName,
+      order.customerEmail,
+      order.date,
+      order.status,
+      order.items,
+      `₹${order.total.toFixed(2)}`,
+    ]);
+
+    // Create CSV string
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `orders_${new Date().toISOString().split("T")[0]}.csv`;
+    link.click();
+  };
+
+  const handleViewOrder = (order: Order) => {
+    setSelectedOrder(order);
+    setShowOrderDetailsModal(true);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   const handleManageOrders = () => {
     setIsManageModalOpen(true);
+  };
+
+  const handleViewAllOrders = () => {
+    setIsManageModalOpen(false);
+  };
+
+  const handleGenerateReport = () => {
+    alert("Generating report for vendor orders...");
+    setIsManageModalOpen(false);
+  };
+
+  const handleMoreOptions = (order: Order) => {
+    setOrderToUpdate(order);
+    setShowStatusUpdateModal(true);
+  };
+
+  const handleUpdateStatus = (newStatus: "Pending" | "Processing" | "Completed" | "Cancelled") => {
+    if (orderToUpdate) {
+      setMockOrders(
+        mockOrders.map((order) =>
+          order.id === orderToUpdate.id
+            ? { ...order, status: newStatus }
+            : order
+        )
+      );
+      setShowStatusUpdateModal(false);
+      setOrderToUpdate(null);
+    }
   };
 
   return (
@@ -414,7 +494,7 @@ const Orders: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.map((order, idx) => (
+                {paginatedOrders.map((order, idx) => (
                   <motion.tr
                     key={order.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -465,10 +545,18 @@ const Orders: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleViewOrder(order)}
+                          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                          title="View order details"
+                        >
                           <Eye size={16} className="text-gray-600" />
                         </button>
-                        <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                        <button
+                          onClick={() => handleMoreOptions(order)}
+                          className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                          title="More actions"
+                        >
                           <MoreVertical size={16} className="text-gray-600" />
                         </button>
                       </div>
@@ -482,13 +570,26 @@ const Orders: React.FC = () => {
           {/* PAGINATION */}
           <div className="px-6 py-4 border-t border-emerald-200 flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              Showing 1-5 of {filteredOrders.length} orders
+              Showing {totalFilteredOrders === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
+              {Math.min(currentPage * itemsPerPage, totalFilteredOrders)} of {totalFilteredOrders}{" "}
+              orders
             </p>
             <div className="flex gap-2">
-              <button className="px-3 py-2 border border-emerald-200 rounded-lg text-sm hover:bg-emerald-50 transition-colors">
+              <button
+                onClick={handlePrevPage}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-emerald-200 rounded-lg text-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 ←
               </button>
-              <button className="px-3 py-2 border border-emerald-200 rounded-lg text-sm hover:bg-emerald-50 transition-colors">
+              <span className="px-3 py-2 text-sm text-gray-600 flex items-center">
+                {currentPage} / {totalPages || 1}
+              </span>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="px-3 py-2 border border-emerald-200 rounded-lg text-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 →
               </button>
             </div>
@@ -563,10 +664,16 @@ const Orders: React.FC = () => {
                     Quick Actions
                   </p>
                   <div className="space-y-2">
-                    <button className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors">
+                    <button
+                      onClick={handleViewAllOrders}
+                      className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                    >
                       View All Orders
                     </button>
-                    <button className="w-full px-4 py-2 bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-lg text-sm font-semibold transition-colors">
+                    <button
+                      onClick={handleGenerateReport}
+                      className="w-full px-4 py-2 bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-lg text-sm font-semibold transition-colors"
+                    >
                       Generate Report
                     </button>
                   </div>
@@ -576,6 +683,180 @@ const Orders: React.FC = () => {
               <div className="text-xs text-gray-500 text-center">
                 Last updated: Today at {new Date().toLocaleTimeString()}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ORDER DETAILS MODAL */}
+      <AnimatePresence>
+        {showOrderDetailsModal && selectedOrder && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowOrderDetailsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-emerald-200"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {selectedOrder.id}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">{selectedOrder.date}</p>
+                </div>
+                <button
+                  onClick={() => setShowOrderDetailsModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-2">Customer Information</h4>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center text-white text-lg">
+                      {selectedOrder.customerImage}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        {selectedOrder.customerName}
+                      </p>
+                      <p className="text-xs text-gray-600">{selectedOrder.customerEmail}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                    <p className="text-xs text-gray-600 mb-1">Status</p>
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${getStatusColor(
+                        selectedOrder.status
+                      )}`}
+                    >
+                      {getStatusIcon(selectedOrder.status)} {selectedOrder.status}
+                    </span>
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1">Items</p>
+                    <p className="font-semibold text-blue-600">{selectedOrder.items}</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
+                  <p className="text-sm text-gray-600 mb-1">Total Amount</p>
+                  <p className="text-3xl font-bold text-emerald-600">
+                    ₹{selectedOrder.total.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowOrderDetailsModal(false)}
+                  className="flex-1 px-4 py-2 bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-lg font-semibold transition-colors"
+                >
+                  Close
+                </button>
+                <button className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors">
+                  Print Details
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* STATUS UPDATE MODAL */}
+      <AnimatePresence>
+        {showStatusUpdateModal && orderToUpdate && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowStatusUpdateModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-emerald-200"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Update Order Status</h3>
+                  <p className="text-sm text-gray-600 mt-1">{orderToUpdate.id}</p>
+                </div>
+                <button
+                  onClick={() => setShowStatusUpdateModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <p className="text-sm font-semibold text-gray-700 mb-4">Select New Status:</p>
+
+                {["Pending", "Processing", "Completed", "Cancelled"].map((status) => {
+                  const statusColors: Record<string, string> = {
+                    Pending: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100 text-yellow-700",
+                    Processing: "bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700",
+                    Completed: "bg-emerald-50 border-emerald-200 hover:bg-emerald-100 text-emerald-700",
+                    Cancelled: "bg-red-50 border-red-200 hover:bg-red-100 text-red-700",
+                  };
+
+                  const isCurrentStatus = orderToUpdate.status === status;
+
+                  return (
+                    <motion.button
+                      key={status}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() =>
+                        handleUpdateStatus(
+                          status as "Pending" | "Processing" | "Completed" | "Cancelled"
+                        )
+                      }
+                      className={`w-full px-4 py-3 border-2 rounded-lg font-semibold text-sm transition-all ${
+                        statusColors[status]
+                      } ${isCurrentStatus ? "ring-2 ring-offset-1" : ""}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{status}</span>
+                        {isCurrentStatus && (
+                          <span className="text-lg font-bold">✓</span>
+                        )}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 mb-6">
+                <p className="text-xs text-gray-600">
+                  <strong>Current Status:</strong> {orderToUpdate.status}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowStatusUpdateModal(false)}
+                className="w-full px-4 py-2 bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-50 rounded-lg font-semibold transition-colors"
+              >
+                Close
+              </button>
             </motion.div>
           </motion.div>
         )}
