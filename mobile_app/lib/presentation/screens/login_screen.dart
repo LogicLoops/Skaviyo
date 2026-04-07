@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../config/routes/app_routes.dart';
 import '../providers/auth_provider.dart';
 
-/**
- * Presentation Layer
- * Login Screen - UI for login
- */
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -26,124 +23,191 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = context.read<AuthProvider>();
-      await authProvider.login(_emailController.text, _passwordController.text);
+    if (!_formKey.currentState!.validate()) return;
 
-      if (authProvider.error != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(authProvider.error!)));
-      }
+    final authProvider = context.read<AuthProvider>();
+    authProvider.clearError();
+    await authProvider.login(_emailController.text.trim(), _passwordController.text);
+
+    if (!mounted) return;
+
+    if (authProvider.isAuthenticated) {
+      Navigator.of(context).pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+      return;
+    }
+
+    if (authProvider.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error!)),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isWeb = screenSize.width > 600;
-    final maxWidth = isWeb ? 500.0 : double.infinity;
-    final horizontalPadding = isWeb ? 0.0 : 24.0;
-
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         return Scaffold(
-          body: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: 24.0,
-                ),
-                child: SizedBox(
-                  width: maxWidth,
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Skaviyo',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'User App Login',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                        const SizedBox(height: 32),
-                        TextFormField(
-                          controller: _emailController,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.email),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            if (!RegExp(
-                              r'^[^@]+@[^@]+\.[^@]+$',
-                            ).hasMatch(value)) {
-                              return 'Please enter a valid email';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _passwordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Password',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.lock),
-                          ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: authProvider.isLoading
-                                ? null
-                                : _handleLogin,
-                            child: authProvider.isLoading
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWebLayout = constraints.maxWidth >= 900;
+
+              return Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: isWebLayout ? 960 : 500,
+                    ),
+                    child: Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: isWebLayout
+                            ? Row(
+                                children: [
+                                  const Expanded(child: _LoginIntro()),
+                                  const SizedBox(width: 32),
+                                  Expanded(
+                                    child: _LoginForm(
+                                      formKey: _formKey,
+                                      emailController: _emailController,
+                                      passwordController: _passwordController,
+                                      isLoading: authProvider.isLoading,
+                                      onLogin: _handleLogin,
                                     ),
-                                  )
-                                : const Text(
-                                    'Login',
-                                    style: TextStyle(fontSize: 16),
                                   ),
-                          ),
-                        ),
-                      ],
+                                ],
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const _LoginIntro(),
+                                  const SizedBox(height: 24),
+                                  _LoginForm(
+                                    formKey: _formKey,
+                                    emailController: _emailController,
+                                    passwordController: _passwordController,
+                                    isLoading: authProvider.isLoading,
+                                    onLogin: _handleLogin,
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         );
       },
+    );
+  }
+}
+
+class _LoginIntro extends StatelessWidget {
+  const _LoginIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Skaviyo',
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Sign in to continue',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LoginForm extends StatelessWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool isLoading;
+  final VoidCallback onLogin;
+
+  const _LoginForm({
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+    required this.isLoading,
+    required this.onLogin,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(value.trim())) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: passwordController,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.lock_outline),
+            ),
+            obscureText: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your password';
+              }
+              if (value.length < 6) {
+                return 'Password must be at least 6 characters';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton(
+              onPressed: isLoading ? null : onLogin,
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Login'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
