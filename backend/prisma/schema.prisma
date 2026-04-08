@@ -1,12 +1,12 @@
 // Prisma schema for e-commerce application
-// Provider: PostgreSQL
+// Provider: MySQL
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
