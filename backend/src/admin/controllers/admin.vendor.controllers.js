@@ -43,20 +43,20 @@ class AdminVendorController {
 
             // Add status filter
             if (status) {
-                query += ` AND v.status = $${params.length + 1}`;
+                query += ` AND v.status = ?`;
                 params.push(status.toUpperCase());
             }
 
-            // Add search filter
+            // Add search filter (MySQL LIKE is case-insensitive by default)
             if (search) {
-                query += ` AND (v.store_name ILIKE $${params.length + 1} OR u.name ILIKE $${params.length + 2} OR u.email ILIKE $${params.length + 3})`;
+                query += ` AND (v.store_name LIKE ? OR u.name LIKE ? OR u.email LIKE ?)`;
                 params.push(`%${search}%`, `%${search}%`, `%${search}%`);
             }
 
-            query += ` ORDER BY v.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-            params.push(limit, offset);
+            query += ` ORDER BY v.created_at DESC LIMIT ? OFFSET ?`;
+            params.push(parseInt(limit), parseInt(offset));
 
-            const result = await pool.query(query, params);
+            const [result] = await pool.query(query, params);
 
             // Get total count
             let countQuery = `
@@ -68,25 +68,25 @@ class AdminVendorController {
             const countParams = [];
 
             if (status) {
-                countQuery += ` AND v.status = $${countParams.length + 1}`;
+                countQuery += ` AND v.status = ?`;
                 countParams.push(status.toUpperCase());
             }
 
             if (search) {
-                countQuery += ` AND (v.store_name ILIKE $${countParams.length + 1} OR u.name ILIKE $${countParams.length + 2} OR u.email ILIKE $${countParams.length + 3})`;
+                countQuery += ` AND (v.store_name LIKE ? OR u.name LIKE ? OR u.email LIKE ?)`;
                 countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
             }
 
-            const countResult = await pool.query(countQuery, countParams);
-            const totalCount = parseInt(countResult.rows[0].total, 10);
+            const [countResult] = await pool.query(countQuery, countParams);
+            const totalCount = parseInt(countResult[0].total, 10);
             const totalPages = Math.ceil(totalCount / limit);
 
-            console.log(`[ADMIN_VENDOR_CONTROLLER] Retrieved ${result.rows.length} vendors (Page ${page}/${totalPages})`);
+            console.log(`[ADMIN_VENDOR_CONTROLLER] Retrieved ${result.length} vendors (Page ${page}/${totalPages})`);
 
             return res.status(200).json({
                 success: true,
                 message: 'Vendors retrieved successfully',
-                data: result.rows.map(vendor => ({
+                data: result.map(vendor => ({
                     id: vendor.id,
                     userId: vendor.user_id,
                     storeName: vendor.store_name,
@@ -154,13 +154,13 @@ class AdminVendorController {
                 JOIN users u ON v.user_id = u.id
                 LEFT JOIN products p ON v.id = p.vendor_id
                 LEFT JOIN order_items oi ON v.id = oi.vendor_id
-                WHERE v.id = $1
+                WHERE v.id = ?
                 GROUP BY v.id, v.user_id, v.store_name, v.gst_number, v.bank_account, v.status, v.created_at, u.name, u.email, u.phone
             `;
 
-            const result = await pool.query(query, [id]);
+            const [result] = await pool.query(query, [id]);
 
-            if (result.rows.length === 0) {
+            if (result.length === 0) {
                 console.log('[ADMIN_VENDOR_CONTROLLER] Vendor not found:', id);
                 return res.status(404).json({
                     success: false,
@@ -168,7 +168,7 @@ class AdminVendorController {
                 });
             }
 
-            const vendor = result.rows[0];
+            const vendor = result[0];
 
             console.log(`[ADMIN_VENDOR_CONTROLLER] Retrieved vendor details for ID: ${id}`);
 
@@ -233,14 +233,13 @@ class AdminVendorController {
 
             const updateQuery = `
                 UPDATE vendors
-                SET status = $1
-                WHERE id = $2
-                RETURNING id, store_name, status, created_at, user_id
+                SET status = ?
+                WHERE id = ?
             `;
 
-            const result = await pool.query(updateQuery, [status.toUpperCase(), id]);
+            const [result] = await pool.query(updateQuery, [status.toUpperCase(), id]);
 
-            if (result.rows.length === 0) {
+            if (result.affectedRows === 0) {
                 console.log('[ADMIN_VENDOR_CONTROLLER] Vendor not found for status update:', id);
                 return res.status(404).json({
                     success: false,
@@ -248,13 +247,18 @@ class AdminVendorController {
                 });
             }
 
-            const vendor = result.rows[0];
+            // Fetch updated vendor
+            const [vendorData] = await pool.query(
+                'SELECT id, store_name, status, created_at, user_id FROM vendors WHERE id = ?',
+                [id]
+            );
+            const vendor = vendorData[0];
 
             console.log(`[ADMIN_VENDOR_CONTROLLER] Vendor status updated to ${status} for vendor ID: ${id}`);
 
             return res.status(200).json({
                 success: true,
-                message: `Vendor ${status === 'ACTIVE' ? 'verified' : status === 'SUSPENSION' ? 'suspended' : 'updated'} successfully`,
+                message: `Vendor ${status === 'ACTIVE' ? 'verified' : status === 'SUSPENDED' ? 'suspended' : 'updated'} successfully`,
                 data: {
                     id: vendor.id,
                     storeName: vendor.store_name,
@@ -292,15 +296,11 @@ class AdminVendorController {
 
             const { id } = req.params;
 
-            const deleteQuery = `
-                DELETE FROM vendors
-                WHERE id = $1
-                RETURNING id, store_name
-            `;
+            // Get vendor info before deleting
+            const checkQuery = `SELECT id, store_name FROM vendors WHERE id = ?`;
+            const [checkResult] = await pool.query(checkQuery, [id]);
 
-            const result = await pool.query(deleteQuery, [id]);
-
-            if (result.rows.length === 0) {
+            if (checkResult.length === 0) {
                 console.log('[ADMIN_VENDOR_CONTROLLER] Vendor not found for deletion:', id);
                 return res.status(404).json({
                     success: false,
@@ -308,7 +308,11 @@ class AdminVendorController {
                 });
             }
 
-            const vendor = result.rows[0];
+            const vendor = checkResult[0];
+
+            // Delete vendor (CASCADE will handle related records)
+            const deleteQuery = `DELETE FROM vendors WHERE id = ?`;
+            await pool.query(deleteQuery, [id]);
 
             console.log(`[ADMIN_VENDOR_CONTROLLER] Vendor deleted with ID: ${id}`);
 

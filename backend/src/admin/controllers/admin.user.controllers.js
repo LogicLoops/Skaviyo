@@ -10,8 +10,8 @@ class AdminUserController {
             const userId = req.params.id;
             console.log(`[ADMIN_USER_CONTROLLER] Fetching details for user ID: ${userId}`);
 
-            const query = 'SELECT id, email, role, status, created_at FROM users WHERE id = $1';
-            const { rows } = await pool.query(query, [userId]);
+            const query = 'SELECT id, email, role, status, created_at FROM users WHERE id = ?';
+            const [rows] = await pool.query(query, [userId]);
 
             if (rows.length === 0) {
                 console.log(`[ADMIN_USER_CONTROLLER] No user found with ID: ${userId}`);
@@ -71,14 +71,14 @@ class AdminUserController {
                 ORDER BY u.created_at DESC
             `;
 
-            const result = await pool.query(query);
+            const [result] = await pool.query(query);
 
-            console.log(`[ADMIN_USER_CONTROLLER] Retrieved ${result.rows.length} customers`);
+            console.log(`[ADMIN_USER_CONTROLLER] Retrieved ${result.length} customers`);
 
             return res.status(200).json({
                 success: true,
                 message: 'Customers retrieved successfully',
-                data: result.rows.map(customer => ({
+                data: result.map(customer => ({
                     id: customer.id,
                     name: customer.name,
                     email: customer.email,
@@ -131,13 +131,13 @@ class AdminUserController {
                     COALESCE(SUM(o.total_amount), 0) as total_spent
                 FROM users u
                 LEFT JOIN orders o ON u.id = o.user_id
-                WHERE u.id = $1 AND u.role = 'CUSTOMER'
+                WHERE u.id = ? AND u.role = 'CUSTOMER'
                 GROUP BY u.id, u.name, u.email, u.phone, u.status, u.created_at
             `;
 
-            const customerResult = await pool.query(customerQuery, [id]);
+            const [customerResult] = await pool.query(customerQuery, [id]);
 
-            if (customerResult.rows.length === 0) {
+            if (customerResult.length === 0) {
                 console.log('[ADMIN_USER_CONTROLLER] Customer not found:', id);
                 return res.status(404).json({
                     success: false,
@@ -145,7 +145,7 @@ class AdminUserController {
                 });
             }
 
-            const customer = customerResult.rows[0];
+            const customer = customerResult[0];
 
             // Get customer's orders with items
             const ordersQuery = `
@@ -156,7 +156,7 @@ class AdminUserController {
                     o.order_status,
                     o.payment_status,
                     o.created_at,
-                    json_agg(json_build_object(
+                    JSON_ARRAYAGG(JSON_OBJECT(
                         'id', oi.id,
                         'productVariantId', oi.product_variant_id,
                         'quantity', oi.quantity,
@@ -165,14 +165,14 @@ class AdminUserController {
                     )) as items
                 FROM orders o
                 LEFT JOIN order_items oi ON o.id = oi.order_id
-                WHERE o.user_id = $1
+                WHERE o.user_id = ?
                 GROUP BY o.id
                 ORDER BY o.created_at DESC
             `;
 
-            const ordersResult = await pool.query(ordersQuery, [id]);
+            const [ordersResult] = await pool.query(ordersQuery, [id]);
 
-            console.log(`[ADMIN_USER_CONTROLLER] Retrieved customer details with ${ordersResult.rows.length} orders for customer ID: ${id}`);
+            console.log(`[ADMIN_USER_CONTROLLER] Retrieved customer details with ${ordersResult.length} orders for customer ID: ${id}`);
 
             return res.status(200).json({
                 success: true,
@@ -186,14 +186,14 @@ class AdminUserController {
                     totalOrders: parseInt(customer.total_orders, 10),
                     totalSpent: parseFloat(customer.total_spent).toFixed(2),
                     createdAt: customer.created_at,
-                    orders: ordersResult.rows.map(order => ({
+                    orders: ordersResult.map(order => ({
                         id: order.id,
                         orderNumber: order.order_number,
                         totalAmount: parseFloat(order.total_amount).toFixed(2),
                         orderStatus: order.order_status,
                         paymentStatus: order.payment_status,
                         createdAt: order.created_at,
-                        items: order.items ? order.items.length : 0
+                        items: order.items ? JSON.parse(order.items).length : 0
                     }))
                 }
             });
@@ -239,14 +239,13 @@ class AdminUserController {
 
             const updateQuery = `
                 UPDATE users
-                SET status = $1
-                WHERE id = $2 AND role = 'CUSTOMER'
-                RETURNING id, name, email, status, created_at
+                SET status = ?
+                WHERE id = ? AND role = 'CUSTOMER'
             `;
 
-            const result = await pool.query(updateQuery, [status.toUpperCase(), id]);
+            const [result] = await pool.query(updateQuery, [status.toUpperCase(), id]);
 
-            if (result.rows.length === 0) {
+            if (result.affectedRows === 0) {
                 console.log('[ADMIN_USER_CONTROLLER] Customer not found for status update:', id);
                 return res.status(404).json({
                     success: false,
@@ -254,7 +253,12 @@ class AdminUserController {
                 });
             }
 
-            const customer = result.rows[0];
+            // Fetch updated customer
+            const [customerData] = await pool.query(
+                'SELECT id, name, email, status, created_at FROM users WHERE id = ?',
+                [id]
+            );
+            const customer = customerData[0];
 
             console.log(`[ADMIN_USER_CONTROLLER] Customer ${id} status updated to ${status.toUpperCase()}`);
 
@@ -300,10 +304,10 @@ class AdminUserController {
             const { id } = req.params;
 
             // Get customer info before deleting
-            const checkQuery = `SELECT id, name, email FROM users WHERE id = $1 AND role = 'CUSTOMER'`;
-            const checkResult = await pool.query(checkQuery, [id]);
+            const checkQuery = `SELECT id, name, email FROM users WHERE id = ? AND role = 'CUSTOMER'`;
+            const [checkResult] = await pool.query(checkQuery, [id]);
 
-            if (checkResult.rows.length === 0) {
+            if (checkResult.length === 0) {
                 console.log('[ADMIN_USER_CONTROLLER] Customer not found for deletion:', id);
                 return res.status(404).json({
                     success: false,
@@ -311,10 +315,10 @@ class AdminUserController {
                 });
             }
 
-            const customerInfo = checkResult.rows[0];
+            const customerInfo = checkResult[0];
 
             // Delete customer (CASCADE will handle related records)
-            const deleteQuery = `DELETE FROM users WHERE id = $1 AND role = 'CUSTOMER'`;
+            const deleteQuery = `DELETE FROM users WHERE id = ? AND role = 'CUSTOMER'`;
             await pool.query(deleteQuery, [id]);
 
             console.log(`[ADMIN_USER_CONTROLLER] Customer ${id} deleted successfully`);

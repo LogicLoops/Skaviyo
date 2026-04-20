@@ -40,13 +40,13 @@ class AdminController {
           status,
           created_at
         FROM users
-        WHERE id = $1 AND role = 'ADMIN'
+        WHERE id = ? AND role = 'ADMIN'
       `;
 
-      const result = await pool.query(query, [userId]);
+      const [result] = await pool.query(query, [userId]);
 
       // Check if admin exists
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         console.log('[ADMIN_CONTROLLER] Admin not found for id:', userId);
         return res.status(404).json({
           success: false,
@@ -54,7 +54,7 @@ class AdminController {
         });
       }
 
-      const admin = result.rows[0];
+      const admin = result[0];
 
       console.log('[ADMIN_CONTROLLER] Admin details retrieved successfully for:', admin.email);
 
@@ -118,14 +118,14 @@ class AdminController {
         ORDER BY created_at DESC
       `;
 
-      const result = await pool.query(query);
+      const [result] = await pool.query(query);
 
-      console.log('[ADMIN_CONTROLLER] Retrieved', result.rows.length, 'admins');
+      console.log('[ADMIN_CONTROLLER] Retrieved', result.length, 'admins');
 
       return res.status(200).json({
         success: true,
         message: 'Admins retrieved successfully',
-        data: result.rows.map(admin => ({
+        data: result.map(admin => ({
           id: admin.id,
           name: admin.name,
           email: admin.email,
@@ -182,14 +182,13 @@ class AdminController {
       // Update admin details
       const query = `
         UPDATE users
-        SET name = $1, email = $2
-        WHERE id = $3 AND role = 'ADMIN'
-        RETURNING id, name, email, role, status, created_at
+        SET name = ?, email = ?
+        WHERE id = ? AND role = 'ADMIN'
       `;
 
-      const result = await pool.query(query, [name, email, userId]);
+      const [result] = await pool.query(query, [name, email, userId]);
 
-      if (result.rows.length === 0) {
+      if (result.affectedRows === 0) {
         console.log('[ADMIN_CONTROLLER] Admin not found for update:', userId);
         return res.status(404).json({
           success: false,
@@ -197,7 +196,12 @@ class AdminController {
         });
       }
 
-      const admin = result.rows[0];
+      // Fetch updated admin
+      const [adminData] = await pool.query(
+        'SELECT id, name, email, role, status, created_at FROM users WHERE id = ? AND role = ?',
+        [userId, 'ADMIN']
+      );
+      const admin = adminData[0];
 
       console.log('[ADMIN_CONTROLLER] Admin details updated successfully for:', admin.email);
 
@@ -254,7 +258,7 @@ class AdminController {
         ORDER BY count DESC
       `;
 
-      const countResult = await pool.query(countQuery);
+      const [countResult] = await pool.query(countQuery);
 
       // Get detailed user list by role
       const usersQuery = `
@@ -269,13 +273,13 @@ class AdminController {
         ORDER BY role ASC, created_at DESC
       `;
 
-      const usersResult = await pool.query(usersQuery);
+      const [usersResult] = await pool.query(usersQuery);
 
       console.log('[ADMIN_CONTROLLER] Retrieved users by role');
 
       // Format the response
       const roleCounts = {};
-      countResult.rows.forEach(row => {
+      countResult.forEach(row => {
         roleCounts[row.role] = parseInt(row.count, 10);
       });
 
@@ -284,8 +288,8 @@ class AdminController {
         message: 'Users retrieved successfully filtered by role',
         data: {
           summary: roleCounts,
-          totalUsers: usersResult.rows.length,
-          users: usersResult.rows.map(user => ({
+          totalUsers: usersResult.length,
+          users: usersResult.map(user => ({
             id: user.id,
             name: user.name,
             email: user.email,
@@ -346,21 +350,21 @@ class AdminController {
           status,
           created_at
         FROM users
-        WHERE role = $1
+        WHERE role = ?
         ORDER BY created_at DESC
       `;
 
-      const result = await pool.query(query, [role.toUpperCase()]);
+      const [result] = await pool.query(query, [role.toUpperCase()]);
 
-      console.log(`[ADMIN_CONTROLLER] Retrieved ${result.rows.length} users with role: ${role}`);
+      console.log(`[ADMIN_CONTROLLER] Retrieved ${result.length} users with role: ${role}`);
 
       return res.status(200).json({
         success: true,
         message: `Users with role '${role.toUpperCase()}' retrieved successfully`,
         data: {
           role: role.toUpperCase(),
-          count: result.rows.length,
-          users: result.rows.map(user => ({
+          count: result.length,
+          users: result.map(user => ({
             id: user.id,
             name: user.name,
             email: user.email,
@@ -399,7 +403,7 @@ class AdminController {
         });
       }
 
-      const totalRevenue = await pool.query(`
+      const [totalRevenue] = await pool.query(`
         SELECT SUM(amount) as total
         FROM payments
         WHERE status = 'PAID'
@@ -407,13 +411,13 @@ class AdminController {
 
       console.log('\n💰 Total Revenue (Successful Payments):');
       console.log('─'.repeat(40));
-      console.log(`$${parseFloat(totalRevenue.rows[0].total || 0).toFixed(2)}`);
+      console.log(`$${parseFloat(totalRevenue[0].total || 0).toFixed(2)}`);
 
       return res.status(200).json({
         success: true,
         message: 'Total revenue retrieved successfully',
         data: {
-          totalRevenue: parseFloat(totalRevenue.rows[0].total || 0).toFixed(2)
+          totalRevenue: parseFloat(totalRevenue[0].total || 0).toFixed(2)
         }
       });
     } catch (error) {
@@ -445,20 +449,20 @@ class AdminController {
         });
       }
 
-      const totalOrders = await pool.query(`
+      const [totalOrders] = await pool.query(`
         SELECT COUNT(*) as total
         FROM orders
       `);
 
       console.log('\n📦 Total Orders:');
       console.log('─'.repeat(40));
-      console.log(`${totalOrders.rows[0].total} orders`);
+      console.log(`${totalOrders[0].total} orders`);
 
       return res.status(200).json({
         success: true,
         message: 'Total orders retrieved successfully',
         data: {
-          totalOrders: parseInt(totalOrders.rows[0].total, 10)
+          totalOrders: parseInt(totalOrders[0].total, 10)
         }
       });
     } catch (error) {
@@ -499,7 +503,7 @@ class AdminController {
     }
 
     try {
-      const ordersResult = await pool.query(`
+      const [ordersResult] = await pool.query(`
         SELECT 
           id,
           order_number,
@@ -508,19 +512,19 @@ class AdminController {
           order_status,
           created_at
         FROM orders
-        WHERE order_status = $1
+        WHERE order_status = ?
         ORDER BY created_at DESC
       `, [status.toUpperCase()]);
 
-      console.log(`[ADMIN_CONTROLLER] Retrieved ${ordersResult.rows.length} orders with status: ${status}`);
+      console.log(`[ADMIN_CONTROLLER] Retrieved ${ordersResult.length} orders with status: ${status}`);
 
       return res.status(200).json({
         success: true,
         message: `Orders with status '${status.toUpperCase()}' retrieved successfully`,
         data: {
           status: status.toUpperCase(),
-          count: ordersResult.rows.length,
-          orders: ordersResult.rows.map(order => ({
+          count: ordersResult.length,
+          orders: ordersResult.map(order => ({
             id: order.id,
             orderNumber: order.order_number,
             userId: order.user_id,
@@ -558,22 +562,22 @@ static async getTopSellingProducts(req, res) {
       });
     }
 
-    const topProductsResult = await pool.query(`
+    const [topProductsResult] = await pool.query(`
       SELECT 
-      p.id,
-      p.title AS name,
-      SUM(oi.quantity) as total_sold
+        p.id,
+        p.title AS name,
+        SUM(oi.quantity) as total_sold
       FROM order_items oi
       JOIN product_variants pv 
-      ON oi.product_variant_id = pv.id
+        ON oi.product_variant_id = pv.id
       JOIN products p 
-      ON pv.product_id = p.id
+        ON pv.product_id = p.id
       JOIN orders o 
-      ON oi.order_id = o.id
+        ON oi.order_id = o.id
       WHERE o.order_status IN ('SHIPPED', 'DELIVERED')
       GROUP BY p.id
       ORDER BY total_sold DESC
-      LIMIT 5;
+      LIMIT 5
     `);
 
     console.log('[ADMIN_CONTROLLER] Retrieved top selling products');
@@ -581,7 +585,7 @@ static async getTopSellingProducts(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Top selling products retrieved successfully',
-      data: topProductsResult.rows.map(product => ({
+      data: topProductsResult.map(product => ({
         id: product.id,
         name: product.name,
         totalSold: parseInt(product.total_sold, 10)
@@ -620,7 +624,7 @@ static async getOrderStatusBreakdown(req, res) {
     // If category is provided, fetch specific order data for that category
     if (category && validCategories.includes(category.toUpperCase())) {
       const categoryUpper = category.toUpperCase();
-      const ordersResult = await pool.query(`
+      const [ordersResult] = await pool.query(`
         SELECT 
           id,
           order_number,
@@ -629,24 +633,24 @@ static async getOrderStatusBreakdown(req, res) {
           order_status,
           created_at
         FROM orders
-        WHERE order_status = $1
+        WHERE order_status = ?
         ORDER BY created_at DESC
       `, [categoryUpper]);
 
-      console.log(`[ADMIN_CONTROLLER] Retrieved ${ordersResult.rows.length} orders with status: ${categoryUpper}`);
+      console.log(`[ADMIN_CONTROLLER] Retrieved ${ordersResult.length} orders with status: ${categoryUpper}`);
 
       return res.status(200).json({
         success: true,
         message: `Orders with status '${categoryUpper}' retrieved successfully`,
         data: {
           status: categoryUpper,
-          count: ordersResult.rows.length,
-          orders: ordersResult.rows.map(order => ({
+          count: ordersResult.length,
+          orders: ordersResult.map(order => ({
             id: order.id,
             orderNumber: order.order_number,
             userId: order.user_id,
             totalAmount: parseFloat(order.total_amount).toFixed(2),
-            orderStatus: order.status,
+            orderStatus: order.order_status,
             createdAt: order.created_at
           }))
         }
@@ -654,7 +658,7 @@ static async getOrderStatusBreakdown(req, res) {
     }
 
     // If no category provided, return breakdown of all statuses
-    const statusBreakdownResult = await pool.query(`
+    const [statusBreakdownResult] = await pool.query(`
       SELECT 
         order_status,
         COUNT(*) as count
@@ -672,7 +676,7 @@ static async getOrderStatusBreakdown(req, res) {
     };
 
     // Populate counts from query results
-    statusBreakdownResult.rows.forEach(row => {
+    statusBreakdownResult.forEach(row => {
       if (breakdown.hasOwnProperty(row.order_status)) {
         breakdown[row.order_status] = parseInt(row.count, 10);
       }
