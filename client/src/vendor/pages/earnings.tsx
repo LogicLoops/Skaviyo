@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   DollarSign,
   Download,
@@ -9,8 +9,11 @@ import {
   CreditCard,
   Building2,
   Plus,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 import Header from "../components/Header";
+import vendorAPI from "../../api/services/vendorAPI";
 import {
   ResponsiveContainer,
   LineChart,
@@ -37,81 +40,78 @@ interface PayoutMethod {
   icon: React.ReactNode;
 }
 
-const revenueChartData: RevenueData[] = [
-  { month: "Jan", revenue: 12000, projected: 13500 },
-  { month: "Feb", revenue: 15000, projected: 16200 },
-  { month: "Mar", revenue: 18000, projected: 19000 },
-  { month: "Apr", revenue: 22000, projected: 23500 },
-  { month: "May", revenue: 25000, projected: 26800 },
-  { month: "Jun", revenue: 28000, projected: 29500 },
-  { month: "Jul", revenue: 31000, projected: 32200 },
-  { month: "Aug", revenue: 32000, projected: 33500 },
-  { month: "Sep", revenue: 33000, projected: 34000 },
-  { month: "Oct", revenue: 35000, projected: 35800 },
-  { month: "Nov", revenue: 38000, projected: 38500 },
-  { month: "Dec", revenue: 42000, projected: 42500 },
-];
-
 const glassEffect = "bg-white border border-emerald-200 rounded-2xl shadow-lg hover:shadow-xl transition-all";
 
 const Earnings: React.FC = () => {
   const [earnings, setEarnings] = useState({
-    totalRevenue: 48290,
-    availableBalance: 8450.25,
-    pendingClearance: 1240,
-    nextPayoutDate: "Nov 01, 2024",
+    totalRevenue: 0,
+    availableBalance: 0,
+    pendingClearance: 0,
+    nextPayoutDate: "",
   });
-
+  const [revenueChartData, setRevenueChartData] = useState<RevenueData[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [showWithdraw, setShowWithdraw] = useState(false);
-  const [withdrawAmount, setWithdrawAmount] = useState(2500);
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
   const [selectedMethod, setSelectedMethod] = useState("bank");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showAddMethod, setShowAddMethod] = useState(false);
   const [newMethodName, setNewMethodName] = useState("");
   const [newMethodType, setNewMethodType] = useState("bank");
-  const [transactions, setTransactions] = useState([
-    {
-      id: 1,
-      date: "Oct 24, 2024",
-      txnId: "TXN-98823",
-      description: "Order #ORD-7882 Payment",
-      type: "Credit",
-      amount: 342.50,
-      status: "Pending",
-      color: "yellow",
-    },
-    {
-      id: 2,
-      date: "Oct 22, 2024",
-      txnId: "TXN-98754",
-      description: "Withdrawal to Bank •••••••432",
-      type: "Payout",
-      amount: -1500.0,
-      status: "Processed",
-      color: "emerald",
-    },
-    {
-      id: 3,
-      date: "Oct 21, 2024",
-      txnId: "TXN-98738",
-      description: "Order #ORD-7870 Payment",
-      type: "Credit",
-      amount: 899.0,
-      status: "Cleared",
-      color: "emerald",
-    },
-    {
-      id: 4,
-      date: "Oct 20, 2024",
-      txnId: "TXN-99688",
-      description: "Monthly Subscription Fee",
-      type: "Fee",
-      amount: -29.0,
-      status: "Paid",
-      color: "blue",
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch earnings and revenue data
+  useEffect(() => {
+    const fetchEarningsData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch earnings summary
+        const earningsResponse = await vendorAPI.getVendorEarnings();
+        if (earningsResponse.success && earningsResponse.data) {
+          setEarnings({
+            totalRevenue: earningsResponse.data.totalRevenue || 0,
+            availableBalance: earningsResponse.data.availableBalance || 0,
+            pendingClearance: earningsResponse.data.pendingClearance || 0,
+            nextPayoutDate: earningsResponse.data.payoutDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          });
+          setWithdrawAmount(Math.floor((earningsResponse.data.availableBalance || 0) / 2));
+        }
+
+        // Fetch revenue chart data
+        const revenueResponse = await vendorAPI.getRevenueChartData();
+        if (revenueResponse.success && revenueResponse.data) {
+          setRevenueChartData(revenueResponse.data);
+        }
+
+        // Fetch transactions
+        const transactionsResponse = await vendorAPI.getTransactionHistory();
+        if (transactionsResponse.success && transactionsResponse.data) {
+          const txns = transactionsResponse.data.map((txn: any) => ({
+            id: txn.id,
+            date: new Date(txn.date).toLocaleDateString(),
+            txnId: `TXN-${txn.id}`,
+            description: txn.description || "Transaction",
+            type: txn.type || "Credit",
+            amount: txn.amount || 0,
+            status: txn.status || "Pending",
+            color: txn.status === "Pending" ? "yellow" : "emerald",
+          }));
+          setTransactions(txns);
+        }
+      } catch (err) {
+        console.error("Error fetching earnings data:", err);
+        setError("Failed to load earnings data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEarningsData();
+  }, []);
 
   const fee = Math.round((withdrawAmount * 0.01) * 100) / 100;
   const netAmount = withdrawAmount - fee;
@@ -249,6 +249,27 @@ const Earnings: React.FC = () => {
           vendorRole="Vendor"
         />
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-semibold">Loading earnings data...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && !loading && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* CONTENT */}
+        {!loading && (
+        <>
         {/* SUCCESS MESSAGE */}
         {showSuccessMessage && (
           <div className="fixed top-6 right-6 z-40 animate-in fade-in slide-in-from-right-4">
@@ -434,7 +455,8 @@ const Earnings: React.FC = () => {
             </table>
           </div>
         </div>
-      </div>
+        </>
+        )}
 
       {/* WITHDRAW MODAL OVERLAY */}
       {showWithdraw && (
@@ -652,6 +674,7 @@ const Earnings: React.FC = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

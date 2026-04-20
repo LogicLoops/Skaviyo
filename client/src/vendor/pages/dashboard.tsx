@@ -8,8 +8,11 @@ import {
   CheckCircle2,
   Truck,
   XCircle,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 import Header from "../components/Header";
+import vendorAPI from "../../api/services/vendorAPI";
 import {
   ResponsiveContainer,
   BarChart,
@@ -30,16 +33,6 @@ interface KPI {
   sub: string;
   icon: React.ReactNode;
 }
-
-const revenueData = [
-  { day: "Mon", value: 4200 },
-  { day: "Tue", value: 5200 },
-  { day: "Wed", value: 4800 },
-  { day: "Thu", value: 8200 },
-  { day: "Fri", value: 5600 },
-  { day: "Sat", value: 6100 },
-  { day: "Sun", value: 5900 },
-];
 
 const kpiCardStyle =
   "bg-white border border-gray-200 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300";
@@ -71,56 +64,88 @@ const VendorDashboard: React.FC = () => {
       icon: <Clock size={22} />,
     },
   ]);
-  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [topProducts] = useState<TopProduct[]>([]);
   const [orderStats, setOrderStats] = useState({
     completed: 0,
     shipped: 0,
     cancelled: 0,
     pending: 0,
   });
+  const [revenueChartData, setRevenueChartData] = useState(
+    Array(7).fill({ day: "", value: 0 })
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Initialize with sample data - in production, fetch from API
-    setKpis([
-      {
-        title: "Total Products",
-        value: "24",
-        sub: "↑ +12% this month",
-        icon: <Package size={22} />,
-      },
-      {
-        title: "Total Orders",
-        value: "156",
-        sub: "↑ +8.2% vs last week",
-        icon: <ShoppingBag size={22} />,
-      },
-      {
-        title: "Revenue",
-        value: "₹45.2k",
-        sub: "↑ +15% year over year",
-        icon: <IndianRupee size={22} />,
-      },
-      {
-        title: "Pending Orders",
-        value: "5",
-        sub: "Needs attention",
-        icon: <Clock size={22} />,
-      },
-    ]);
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-    setTopProducts([
-      { id: 1, name: "Premium Watch", totalSold: 1204 },
-      { id: 2, name: "Wireless Earbuds", totalSold: 843 },
-      { id: 3, name: "Phone Case", totalSold: 621 },
-      { id: 4, name: "Screen Protector", totalSold: 410 },
-    ]);
+        // Fetch dashboard stats
+        const statsResponse = await vendorAPI.getVendorDashboardStats();
+        if (statsResponse.success && statsResponse.data) {
+          const stats = statsResponse.data;
+          setKpis([
+            {
+              title: "Total Products",
+              value: stats.totalProducts?.toString() || "0",
+              sub: "↑ +12% this month",
+              icon: <Package size={22} />,
+            },
+            {
+              title: "Total Orders",
+              value: stats.totalOrders?.toString() || "0",
+              sub: "↑ +8.2% vs last week",
+              icon: <ShoppingBag size={22} />,
+            },
+            {
+              title: "Revenue",
+              value: `₹${(stats.totalRevenue || 0).toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}`,
+              sub: "↑ +15% year over year",
+              icon: <IndianRupee size={22} />,
+            },
+            {
+              title: "Pending Orders",
+              value: stats.pendingOrders?.toString() || "0",
+              sub: "Needs attention",
+              icon: <Clock size={22} />,
+            },
+          ]);
 
-    setOrderStats({
-      completed: 120,
-      shipped: 32,
-      cancelled: 4,
-      pending: 5,
-    });
+          // Set order status distribution
+          setOrderStats({
+            pending: stats.pendingOrders || 0,
+            shipped: stats.shippedOrders || 0,
+            completed: stats.deliveredOrders || 0,
+            cancelled: stats.cancelledOrders || 0,
+          });
+        }
+
+        // Fetch revenue chart data
+        const revenueResponse = await vendorAPI.getRevenueChartData();
+        if (revenueResponse.success && revenueResponse.data) {
+          setRevenueChartData(revenueResponse.data);
+        }
+
+        // Fetch analytics for additional insights
+        const analyticsResponse = await vendorAPI.getVendorAnalytics();
+        if (analyticsResponse.success && analyticsResponse.data) {
+          // You can use this for top products if available
+          // For now, we'll use existing data structure
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError("Failed to load dashboard data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
   return (
@@ -142,6 +167,27 @@ const VendorDashboard: React.FC = () => {
           vendorRole="Vendor"
         />
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-semibold">Loading dashboard data...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && !loading && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* CONTENT */}
+        {!loading && (
+        <>
         {/* KPI CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {kpis.map((kpi, idx) => (
@@ -196,8 +242,15 @@ const VendorDashboard: React.FC = () => {
 
             <div className="h-64 -mx-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={revenueData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                  <XAxis dataKey="day" stroke="#9CA3AF" style={{ fontSize: "12px" }} />
+                <BarChart
+                  data={revenueChartData.length > 0 ? revenueChartData : []}
+                  margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                >
+                  <XAxis
+                    dataKey={revenueChartData.length > 0 && revenueChartData[0]?.day ? "day" : "month"}
+                    stroke="#9CA3AF"
+                    style={{ fontSize: "12px" }}
+                  />
                   <Tooltip 
                     contentStyle={{ backgroundColor: "rgba(255, 255, 255, 0.95)", border: "1px solid #e5e7eb", borderRadius: "8px" }}
                     cursor={{ fill: "rgba(16, 185, 129, 0.1)" }}
@@ -358,6 +411,8 @@ const VendorDashboard: React.FC = () => {
             </motion.div>
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

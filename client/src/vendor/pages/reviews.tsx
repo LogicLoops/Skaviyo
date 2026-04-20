@@ -1,21 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
-  User,
-  Calendar,
   MessageCircle,
   ThumbsUp,
   ThumbsDown,
-  Filter,
   Search,
   Reply,
   Trash2,
   Download,
-  Flag,
   CheckCircle,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 import Header from "../components/Header";
+import vendorAPI from "../../api/services/vendorAPI";
 
 interface Review {
   id: number;
@@ -31,56 +30,54 @@ interface Review {
   replied?: boolean;
 }
 
-const mockReviews: Review[] = [
-  {
-    id: 1,
-    customerName: "Sofia Martinez",
-    customerAvatar: "SM",
-    productName: "Premium Leather Bag",
-    rating: 5,
-    comment: "Absolutely love this product! The quality is unmatched and the delivery was super fast. Will definitely be ordering again for my friends.",
-    date: "2 hours ago",
-    helpful: 0,
-    unhelpful: 0,
-    status: "published",
-  },
-  {
-    id: 2,
-    customerName: "David Miller",
-    customerAvatar: "DM",
-    productName: "Ceramic Vase Set",
-    rating: 3,
-    comment: "The product is okay, but the packaging was damaged when it arrived. I expected better protection for such a fragile item.",
-    date: "Yesterday",
-    helpful: 0,
-    unhelpful: 0,
-    status: "published",
-  },
-  {
-    id: 3,
-    customerName: "Emily Chen",
-    customerAvatar: "EC",
-    productName: "Wool Blend Scarf",
-    rating: 5,
-    comment: "Exceeded my expectations! The color is exactly as shown in the pictures. Great value for money.",
-    date: "Oct 22, 2024",
-    helpful: 0,
-    unhelpful: 0,
-    status: "published",
-    replied: true,
-  },
-];
-
 const glassEffect =
   "bg-white border border-emerald-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300";
 
 const Reviews: React.FC = () => {
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRating, setFilterRating] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
+
+  // Fetch reviews from API
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await vendorAPI.getVendorReviews(1, 100);
+        
+        if (response.success && response.data) {
+          const reviewsData = response.data.map((review: any) => ({
+            id: review.id,
+            customerName: review.customerName || "Customer",
+            customerAvatar: (review.customerName || "C").charAt(0).toUpperCase(),
+            productName: review.productName || "Product",
+            rating: review.rating || 5,
+            comment: review.comment || "",
+            date: new Date(review.date || review.createdAt).toLocaleDateString(),
+            helpful: review.helpful || 0,
+            unhelpful: review.unhelpful || 0,
+            status: review.status || "published",
+            replied: review.vendorReply ? true : false,
+          }));
+          setReviews(reviewsData);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+        setError("Failed to load reviews");
+        setReviews([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, []);
 
   const filteredReviews = reviews.filter((review) => {
     const matchesSearch =
@@ -96,7 +93,7 @@ const Reviews: React.FC = () => {
     reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
   ).toFixed(1);
   const totalReviews = reviews.length;
-  const publishedReviews = reviews.filter((r) => r.status === "published").length;
+  // const publishedReviews = reviews.filter((r) => r.status === "published").length;
   const pendingReviews = reviews.filter((r) => r.status === "pending").length;
   const responseRate = Math.round((reviews.filter((r) => r.replied).length / totalReviews) * 100);
 
@@ -198,6 +195,27 @@ const Reviews: React.FC = () => {
           vendorRole="Vendor"
         />
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-semibold">Loading reviews...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && !loading && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* CONTENT */}
+        {!loading && (
+        <>
         {/* EXPORT BUTTON */}
         <div className="mb-6">
           <button
@@ -472,6 +490,8 @@ const Reviews: React.FC = () => {
             </motion.div>
           )}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

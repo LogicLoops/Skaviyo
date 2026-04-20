@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -11,75 +11,28 @@ import {
   Clock,
   Zap,
   RotateCcw,
+  Loader,
+  AlertCircle,
 } from "lucide-react";
 import Header from "../components/Header";
+import vendorAPI from "../../api/services/vendorAPI";
 
 interface Order {
   id: string;
+  orderId?: string;
+  orderNumber?: string;
   customerName: string;
   customerEmail: string;
-  customerImage: string;
+  customerImage?: string;
   date: string;
-  status: "Pending" | "Processing" | "Completed" | "Cancelled";
+  status: "Pending" | "Processing" | "Completed" | "Cancelled" | "PENDING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  itemStatus?: string;
   items: number;
   total: number;
 }
 
-const initialOrders: Order[] = [
-  {
-    id: "ORD-7882",
-    customerName: "Sarah Jenkins",
-    customerEmail: "sarah.jenkins@email.com",
-    customerImage: "👩",
-    date: "Oct 24, 2024",
-    status: "Pending",
-    items: 3,
-    total: 342.50,
-  },
-  {
-    id: "ORD-7881",
-    customerName: "Marcus Johnson",
-    customerEmail: "m.johnson@tech.co",
-    customerImage: "👨",
-    date: "Oct 24, 2024",
-    status: "Processing",
-    items: 1,
-    total: 89.00,
-  },
-  {
-    id: "ORD-7880",
-    customerName: "Emily Chen",
-    customerEmail: "emily.chen@email.com",
-    customerImage: "👩",
-    date: "Oct 23, 2024",
-    status: "Completed",
-    items: 4,
-    total: 524.00,
-  },
-  {
-    id: "ORD-7879",
-    customerName: "Robert Fox",
-    customerEmail: "rob.fox@corp.net",
-    customerImage: "👨",
-    date: "Oct 23, 2024",
-    status: "Completed",
-    items: 2,
-    total: 126.00,
-  },
-  {
-    id: "ORD-7878",
-    customerName: "Ana Martinez",
-    customerEmail: "ana.martinez@sp.io",
-    customerImage: "👩",
-    date: "Oct 22, 2024",
-    status: "Cancelled",
-    items: 1,
-    total: 45.00,
-  },
-];
-
 const Orders: React.FC = () => {
-  const [mockOrders, setMockOrders] = useState(initialOrders);
+  const [mockOrders, setMockOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -90,7 +43,50 @@ const Orders: React.FC = () => {
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
   const [orderToUpdate, setOrderToUpdate] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const itemsPerPage = 5;
+
+  // Fetch orders from API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const filters = {
+          search: searchTerm,
+          status: filterStatus !== "All" ? filterStatus : undefined
+        };
+        const response = await vendorAPI.getVendorOrders(currentPage, itemsPerPage, filters);
+        
+        if (response.success && response.data) {
+          // Map API response to Order format
+          const orders = response.data.map((order: any) => ({
+            id: order.id?.toString(),
+            orderNumber: order.orderNumber,
+            orderId: order.orderId?.toString(),
+            customerName: order.customerName,
+            customerEmail: order.customerEmail,
+            customerImage: "?",
+            date: new Date(order.createdAt).toLocaleDateString(),
+            status: order.itemStatus || "PENDING",
+            itemStatus: order.itemStatus,
+            items: order.quantity || 1,
+            total: order.itemPrice || 0,
+          }));
+          setMockOrders(orders);
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err);
+        setError("Failed to load orders");
+        setMockOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrders();
+  }, [currentPage, searchTerm, filterStatus]);
 
   const totalOrders = mockOrders.length;
   const pendingOrders = mockOrders.filter((o) => o.status === "Pending").length;
@@ -254,6 +250,27 @@ const Orders: React.FC = () => {
           vendorRole="Vendor"
         />
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-semibold">Loading orders...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && !loading && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* CONTENT */}
+        {!loading && (
+        <>
         {/* KPI CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Orders */}
@@ -595,6 +612,8 @@ const Orders: React.FC = () => {
             </div>
           </div>
         </motion.div>
+        </>
+        )}
       </div>
 
       {/* MANAGE ORDERS MODAL */}

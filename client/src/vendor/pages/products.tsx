@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -12,8 +12,10 @@ import {
   Plus,
   X,
   Upload,
+  Loader,
 } from "lucide-react";
 import Header from "../components/Header";
+import vendorAPI from "../../api/services/vendorAPI";
 
 interface Product {
   id: number;
@@ -36,66 +38,17 @@ interface FormData {
   description: string;
 }
 
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: "Minimalist Watch",
-    sku: "WTC-2024-001",
-    image: "⌚",
-    category: "Accessories",
-    price: 124.0,
-    stock: 45,
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Pro Audio Set",
-    sku: "AUD-PRO-01",
-    image: "🎧",
-    category: "Electronics",
-    price: 249.0,
-    stock: 12,
-    status: "Low Stock",
-  },
-  {
-    id: 3,
-    name: "Sport Runners",
-    sku: "SFT-05",
-    image: "👟",
-    category: "Footwear",
-    price: 89.0,
-    stock: 0,
-    status: "Out of Stock",
-  },
-  {
-    id: 4,
-    name: "Ergo Chair 2",
-    sku: "FRN-ERG-02",
-    image: "💺",
-    category: "Furniture",
-    price: 350.0,
-    stock: 8,
-    status: "Low Stock",
-  },
-  {
-    id: 5,
-    name: "Classic Sunglasses",
-    sku: "ACC-SUN-01",
-    image: "🕶️",
-    category: "Accessories",
-    price: 129.0,
-    stock: 120,
-    status: "Active",
-  },
-];
-
 const Products: React.FC = () => {
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     category: "",
@@ -106,21 +59,57 @@ const Products: React.FC = () => {
     description: "",
   });
 
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await vendorAPI.getVendorProducts(currentPage, 100, searchTerm);
+        
+        if (response.success && response.data) {
+          const products = response.data.map((product: any) => ({
+            id: product.id,
+            name: product.name,
+            sku: product.sku || `SKU-${product.id}`,
+            image: product.image || "📦",
+            category: product.category || "General",
+            price: product.price || 0,
+            stock: product.stock || 0,
+            status: product.stock === 0 ? "Out of Stock" : product.stock < 10 ? "Low Stock" : "Active",
+          }));
+          setAllProducts(products);
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setError("Failed to load products");
+        setAllProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   // Calculate metrics
-  const totalProducts = mockProducts.length;
-  const activeProducts = mockProducts.filter((p) => p.status === "Active").length;
-  const lowStock = mockProducts.filter((p) => p.status === "Low Stock").length;
-  const drafts = mockProducts.filter((p) => p.status === "Draft").length;
+  const totalProducts = allProducts.length;
+  const activeProducts = allProducts.filter((p) => p.status === "Active").length;
+  const lowStock = allProducts.filter((p) => p.status === "Low Stock").length;
+  const drafts = allProducts.filter((p) => p.status === "Draft").length;
 
   // Filter and search
-  const filteredProducts = mockProducts.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === "All" || product.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    const filtered = allProducts.filter((product) => {
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        filterStatus === "All" || product.status === filterStatus;
+      return matchesSearch && matchesStatus;
+    });
+    setFilteredProducts(filtered);
+  }, [allProducts, searchTerm, filterStatus]);
 
   const itemsPerPage = 5;
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -223,7 +212,7 @@ const Products: React.FC = () => {
     handleCloseModal();
   };
 
-  const handleDeleteProduct = (productId: number) => {
+  const handleDeleteProduct = (_productId: number) => {
     if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
     }
@@ -280,6 +269,27 @@ const Products: React.FC = () => {
           pageSubtitle="Manage your product catalog"
         />
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-semibold">Loading products...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && !loading && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
+        {/* CONTENT */}
+        {!loading && (
+        <>
         {/* KPI CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Total Products */}
@@ -848,6 +858,8 @@ const Products: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+        </>
+        )}
       </div>
     </div>
   );

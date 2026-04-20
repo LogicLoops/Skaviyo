@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Store,
@@ -7,8 +7,10 @@ import {
   Lock,
   CheckCircle2,
   AlertCircle,
+  Loader,
 } from "lucide-react";
 import Header from "../components/Header";
+import vendorAPI from "../../api/services/vendorAPI";
 
 interface GeneralInfo {
   firstName: string;
@@ -48,37 +50,40 @@ const Settings: React.FC = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isChanged, setIsChanged] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // General Info
   const [generalInfo, setGeneralInfo] = useState<GeneralInfo>({
-    firstName: "Alex",
-    lastName: "Morgan",
-    email: "alex.morgan@skaviyo.com",
-    phone: "+1 (555) 012-3456",
-    bio: "Passionate about delivering high-quality products to customers worldwide. Specialized in handcrafted goods and sustainable materials.",
-    avatar: "AM",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    bio: "",
+    avatar: "?",
   });
 
   const [tempGeneralInfo, setTempGeneralInfo] = useState<GeneralInfo>(generalInfo);
 
   // Store Details
   const [storeDetails, setStoreDetails] = useState<StoreDetails>({
-    storeName: "Alex Morgan's Store",
-    storeDescription: "Premium handcrafted products and sustainable goods",
-    category: "Handmade & Crafts",
+    storeName: "",
+    storeDescription: "",
+    category: "Electronics",
     country: "United States",
-    city: "New York",
-    address: "123 Main Street, Suite 100",
+    city: "",
+    address: "",
   });
 
   const [tempStoreDetails, setTempStoreDetails] = useState<StoreDetails>(storeDetails);
 
   // Payout Info
   const [payoutInfo, setPayoutInfo] = useState<PayoutInfo>({
-    bankName: "Chase Bank",
-    accountHolder: "Alex Morgan",
-    accountNumber: "****4291",
-    routingNumber: "****0101",
+    bankName: "",
+    accountHolder: "",
+    accountNumber: "****",
+    routingNumber: "****",
   });
 
   const [tempPayoutInfo, setTempPayoutInfo] = useState<PayoutInfo>(payoutInfo);
@@ -93,6 +98,84 @@ const Settings: React.FC = () => {
   });
 
   const [tempNotifications, setTempNotifications] = useState<NotificationSettings>(notifications);
+
+  // Fetch vendor data on mount
+  useEffect(() => {
+    const fetchVendorData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await vendorAPI.getVendorProfile();
+        
+        if (response.success && response.data) {
+          const vendor = response.data;
+          
+          // Parse user name from vendor data
+          const fullName = vendor.user?.name || "";
+          const nameParts = fullName.split(" ");
+          const firstName = nameParts[0] || "";
+          const lastName = nameParts.slice(1).join(" ") || "";
+          
+          // Set general info
+          setGeneralInfo({
+            firstName: firstName,
+            lastName: lastName,
+            email: vendor.user?.email || "",
+            phone: vendor.phone || "+1 (555) 000-0000",
+            bio: vendor.bio || "",
+            avatar: firstName.charAt(0) + lastName.charAt(0) || "?",
+          });
+          setTempGeneralInfo({
+            firstName: firstName,
+            lastName: lastName,
+            email: vendor.user?.email || "",
+            phone: vendor.phone || "+1 (555) 000-0000",
+            bio: vendor.bio || "",
+            avatar: firstName.charAt(0) + lastName.charAt(0) || "?",
+          });
+
+          // Set store details
+          setStoreDetails({
+            storeName: vendor.store_name || "",
+            storeDescription: vendor.store_description || "",
+            category: vendor.category || "Electronics",
+            country: vendor.country || "United States",
+            city: vendor.city || "",
+            address: vendor.address || "",
+          });
+          setTempStoreDetails({
+            storeName: vendor.store_name || "",
+            storeDescription: vendor.store_description || "",
+            category: vendor.category || "Electronics",
+            country: vendor.country || "United States",
+            city: vendor.city || "",
+            address: vendor.address || "",
+          });
+
+          // Set payout info
+          setPayoutInfo({
+            bankName: vendor.bank_name || "",
+            accountHolder: vendor.account_holder || firstName + " " + lastName,
+            accountNumber: vendor.account_number ? "****" + vendor.account_number.slice(-4) : "****",
+            routingNumber: vendor.routing_number ? "****" + vendor.routing_number.slice(-4) : "****",
+          });
+          setTempPayoutInfo({
+            bankName: vendor.bank_name || "",
+            accountHolder: vendor.account_holder || firstName + " " + lastName,
+            accountNumber: vendor.account_number ? "****" + vendor.account_number.slice(-4) : "****",
+            routingNumber: vendor.routing_number ? "****" + vendor.routing_number.slice(-4) : "****",
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching vendor data:", err);
+        setError("Failed to load vendor settings. Using defaults.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVendorData();
+  }, []);
 
   // Security
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -122,21 +205,53 @@ const Settings: React.FC = () => {
     setIsChanged(true);
   };
 
-  const handleSaveChanges = () => {
-    if (activeTab === "general") {
-      setGeneralInfo(tempGeneralInfo);
-    } else if (activeTab === "store") {
-      setStoreDetails(tempStoreDetails);
-    } else if (activeTab === "payouts") {
-      setPayoutInfo(tempPayoutInfo);
-    } else if (activeTab === "notifications") {
-      setNotifications(tempNotifications);
-    }
+  const handleSaveChanges = async () => {
+    try {
+      setSaving(true);
 
-    setSuccessMessage("Changes saved successfully!");
-    setShowSuccessMessage(true);
-    setIsChanged(false);
-    setTimeout(() => setShowSuccessMessage(false), 3000);
+      if (activeTab === "general") {
+        // Update general info would require separate endpoint
+        // For now, update general info locally
+        setGeneralInfo(tempGeneralInfo);
+        setSuccessMessage("General information updated successfully!");
+      } else if (activeTab === "store") {
+        // Call store update API
+        const response = await vendorAPI.updateVendorProfile({
+          store_name: tempStoreDetails.storeName,
+          store_description: tempStoreDetails.storeDescription,
+          category: tempStoreDetails.category,
+          country: tempStoreDetails.country,
+          city: tempStoreDetails.city,
+          address: tempStoreDetails.address,
+        });
+
+        if (response.success) {
+          setStoreDetails(tempStoreDetails);
+          setSuccessMessage("Store details updated successfully!");
+        } else {
+          setError(response.message || "Failed to update store details");
+          return;
+        }
+      } else if (activeTab === "payouts") {
+        // Update payout info would require separate endpoint
+        setPayoutInfo(tempPayoutInfo);
+        setSuccessMessage("Payout information updated successfully!");
+      } else if (activeTab === "notifications") {
+        // Update notifications would require separate endpoint
+        setNotifications(tempNotifications);
+        setSuccessMessage("Notification preferences updated successfully!");
+      }
+
+      setShowSuccessMessage(true);
+      setIsChanged(false);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    } catch (err) {
+      console.error("Error saving changes:", err);
+      setError("Failed to save changes. Please try again.");
+      setShowSuccessMessage(true);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -202,17 +317,36 @@ const Settings: React.FC = () => {
           vendorRole="Vendor"
         />
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <Loader className="w-12 h-12 text-emerald-600 animate-spin mx-auto mb-4" />
+              <p className="text-gray-600 font-semibold">Loading your settings...</p>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && !loading && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3">
+            <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800">{error}</p>
+          </div>
+        )}
+
         {/* SUCCESS MESSAGE */}
         {showSuccessMessage && (
           <div className="fixed top-6 right-6 z-40 animate-in fade-in slide-in-from-right-4">
-            <div className="bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 font-semibold">
+            <div className={`${error ? 'bg-red-500' : 'bg-emerald-500'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 font-semibold`}>
               <CheckCircle2 size={18} />
-              {successMessage}
+              {error || successMessage}
             </div>
           </div>
         )}
 
         {/* MAIN CONTENT */}
+        {!loading && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* SIDEBAR */}
           <div className="lg:col-span-1">
@@ -332,17 +466,17 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleCancel}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveChanges}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>
@@ -432,17 +566,17 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleCancel}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveChanges}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>
@@ -510,17 +644,17 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleCancel}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveChanges}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>
@@ -631,17 +765,17 @@ const Settings: React.FC = () => {
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleCancel}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveChanges}
-                    disabled={!isChanged}
+                    disabled={!isChanged || saving}
                     className="px-6 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </button>
                 </div>
               </div>
@@ -710,9 +844,10 @@ const Settings: React.FC = () => {
                       </button>
                       <button
                         onClick={handleChangePassword}
-                        className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors"
+                        className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={saving}
                       >
-                        Update Password
+                        {saving ? "Updating..." : "Update Password"}
                       </button>
                     </div>
                   </div>
@@ -728,6 +863,7 @@ const Settings: React.FC = () => {
             )}
           </div>
         </div>
+        )}
       </div>
     </div>
   );
