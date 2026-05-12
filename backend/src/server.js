@@ -8,6 +8,7 @@ const PORT = process.env.PORT || 4000;
 // Import routes
 const authRoutes = require('./authorization/routes/auth');
 const adminRoutes = require('./admin/routes/admin.routes');
+const vendorRoutes = require('./vendor/routes/vendor.routes');
 
 // Middleware
 app.use(cors({
@@ -49,6 +50,9 @@ app.use('/api/v1/auth', authRoutes);
 
 // Admin routes
 app.use('/api/v1/admin', adminRoutes);
+
+// Vendor routes
+app.use('/api/v1/vendor', vendorRoutes);
 
 app.listen(PORT, () => {
   console.log(`[SERVER] Skaviyo Backend running on http://localhost:${PORT}`);

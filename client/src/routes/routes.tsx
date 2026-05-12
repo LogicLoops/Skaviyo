@@ -1,5 +1,6 @@
 import LoginPage from '../auth/login/Loginpage';
 import AdminLayout from '../layouts/AdminLayout';
+import VendorLayout from '../layouts/VendorLayout';
 import Dashboard from '../admin/pages/Dashboard';
 import Users from '../admin/pages/Users';
 import Vendors from '../admin/pages/Vendors';
@@ -10,10 +11,16 @@ import Reports from '../admin/pages/Reports';
 import LimitedEdition from '../admin/pages/LimitedEdition';
 import Settings from '../admin/pages/Settings';
 import VendorDashboard from '../vendor/pages/dashboard';
+import VendorProducts from '../vendor/pages/products';
+import VendorOrders from '../vendor/pages/orders';
+import VendorEarnings from '../vendor/pages/earnings';
+import VendorReviews from '../vendor/pages/reviews';
+import VendorSettings from '../vendor/pages/settings';
 
 export {
   LoginPage,
   AdminLayout,
+  VendorLayout,
   Dashboard,
   Users,
   Vendors,
@@ -23,5 +30,10 @@ export {
   Reports,
   LimitedEdition,
   Settings,
-  VendorDashboard
+  VendorDashboard,
+  VendorProducts,
+  VendorOrders,
+  VendorEarnings,
+  VendorReviews,
+  VendorSettings
 };

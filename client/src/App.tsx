@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import {
   LoginPage,
   AdminLayout,
+  VendorLayout,
   Dashboard,
   Users,
   Vendors,
@@ -11,7 +12,12 @@ import {
   Reports,
   LimitedEdition,
   Settings,
-  VendorDashboard
+  VendorDashboard,
+  VendorProducts,
+  VendorOrders,
+  VendorEarnings,
+  VendorReviews,
+  VendorSettings
 } from './routes/routes';
 
 function App() {
@@ -34,8 +40,15 @@ function App() {
           <Route path="/admin/settings" element={<Settings />} />
         </Route>
 
-        {/* Vendor dashboard route */}
-        <Route path="/vendor-dashboard" element={<VendorDashboard />} />
+        {/* Vendor routes with persistent sidebar */}
+        <Route element={<VendorLayout />}>
+          <Route path="/vendor-dashboard" element={<VendorDashboard />} />
+          <Route path="/vendor-dashboard/products" element={<VendorProducts />} />
+          <Route path="/vendor-dashboard/orders" element={<VendorOrders />} />
+          <Route path="/vendor-dashboard/earnings" element={<VendorEarnings />} />
+          <Route path="/vendor-dashboard/reviews" element={<VendorReviews />} />
+          <Route path="/vendor-dashboard/settings" element={<VendorSettings />} />
+        </Route>
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
